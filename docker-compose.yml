@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: armal-news-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: armal
+      POSTGRES_PASSWORD: armal
+      POSTGRES_DB: armal_news
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:
