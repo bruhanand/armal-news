@@ -41,7 +41,11 @@ export async function POST(req: Request) {
   const db = getDb();
   const results: IngestResult[] = [];
 
-  // tags persisted in 0004; category_slugs persisted in 0004.
+  // tags + category_slugs persisted in slice 0004.
+  // Sequential on purpose: two new Stories with the same title in one
+  // batch must see each other's chosen slug before the next collision
+  // check runs, otherwise both would pick the bare slug and the second
+  // insert would hit the unique constraint.
   for (let i = 0; i < parsed.data.stories.length; i++) {
     const story: IngestStoryV1 = parsed.data.stories[i]!;
     const [existing] = await db
