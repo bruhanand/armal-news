@@ -20,13 +20,14 @@ export default async function DraftsPage() {
       </p>
       {drafts.length === 0 ? (
         <p>
-          No drafts. <code>POST /api/dev/seed-one</code> to create one.
+          No drafts. <code>POST /api/ingest/stories</code> to create some.
         </p>
       ) : (
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ textAlign: "left", borderBottom: "1px solid #ccc" }}>
               <th style={{ padding: "8px" }}>Title</th>
+              <th style={{ padding: "8px" }}>Slug</th>
               <th style={{ padding: "8px" }}>Short summary</th>
               <th style={{ padding: "8px" }}>Created</th>
               <th style={{ padding: "8px" }}></th>
@@ -36,6 +37,15 @@ export default async function DraftsPage() {
             {drafts.map((s) => (
               <tr key={s.id} style={{ borderBottom: "1px solid #eee" }}>
                 <td style={{ padding: "8px" }}>{s.title}</td>
+                <td
+                  style={{
+                    padding: "8px",
+                    fontFamily: "ui-monospace, monospace",
+                    color: "#444",
+                  }}
+                >
+                  {s.slug}
+                </td>
                 <td style={{ padding: "8px", color: "#444" }}>
                   {s.shortSummary}
                 </td>
