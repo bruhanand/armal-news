@@ -8,6 +8,13 @@
       "when": 1777671888017,
       "tag": "0000_greedy_puppet_master",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777675339924,
+      "tag": "0001_tan_captain_midlands",
+      "breakpoints": true
     }
   ]
 }

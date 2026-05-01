@@ -8,6 +8,8 @@ export const storyStatus = pgEnum("story_status", [
 
 export const stories = pgTable("stories", {
   id: uuid("id").defaultRandom().primaryKey(),
+  externalId: text("external_id").notNull().unique(),
+  slug: text("slug").notNull().unique(),
   title: text("title").notNull(),
   shortSummary: text("short_summary").notNull(),
   bodyMarkdown: text("body_markdown").notNull(),
