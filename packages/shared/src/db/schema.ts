@@ -13,7 +13,7 @@ export const stories = pgTable("stories", {
   title: text("title").notNull(),
   shortSummary: text("short_summary").notNull(),
   bodyMarkdown: text("body_markdown").notNull(),
-  imageUrl: text("image_url"),
+  imageUrl: text("image_url").notNull(),
   sourceLink: text("source_link").notNull(),
   status: storyStatus("status").notNull().default("draft"),
   createdAt: timestamp("created_at", { withTimezone: true })
