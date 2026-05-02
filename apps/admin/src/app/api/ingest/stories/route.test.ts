@@ -9,7 +9,13 @@ vi.mock("@/lib/storage", async () => {
   };
 });
 
-import { getDb, stories } from "@armal/shared/db";
+import { eq } from "drizzle-orm";
+import {
+  categories,
+  getDb,
+  stories,
+  storyCategories,
+} from "@armal/shared/db";
 import { uploadStoryImage } from "@/lib/storage";
 import { POST } from "./route";
 
@@ -281,5 +287,158 @@ describe("POST /api/ingest/stories — image pipeline", () => {
     expect(rows).toHaveLength(0);
     expect(uploadMock).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/ingest/stories — category persistence", () => {
+  beforeEach(() => {
+    fetchMock.mockImplementation(async () => imageResponse("image/jpeg"));
+  });
+
+  it("writes one story_categories row per category on insert", async () => {
+    const batch = {
+      stories: [
+        makeStory({
+          external_id: "ext-cat-1",
+          title: "Two-cat story",
+          image_url: "https://upstream.example/a.jpg",
+          category_slugs: ["ai-in-robotics", "ai-in-tech"],
+        }),
+      ],
+    };
+
+    const res = await POST(ingestRequest(batch));
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as { ok: boolean };
+    expect(json.ok).toBe(true);
+
+    const db = getDb();
+    const [row] = await db
+      .select()
+      .from(stories)
+      .where(eq(stories.externalId, "ext-cat-1"));
+    expect(row).toBeDefined();
+
+    const joins = await db
+      .select({ slug: categories.slug })
+      .from(storyCategories)
+      .innerJoin(
+        categories,
+        eq(storyCategories.categoryId, categories.id),
+      )
+      .where(eq(storyCategories.storyId, row!.id));
+    expect(joins.map((j) => j.slug).sort()).toEqual([
+      "ai-in-robotics",
+      "ai-in-tech",
+    ]);
+  });
+
+  it("reconciles join rows on update (delete-then-insert)", async () => {
+    const first = {
+      stories: [
+        makeStory({
+          external_id: "ext-cat-rec",
+          title: "Reconciling story",
+          image_url: "https://upstream.example/a.jpg",
+          category_slugs: ["ai-in-robotics", "ai-in-tech"],
+        }),
+      ],
+    };
+    await POST(ingestRequest(first));
+
+    const second = {
+      stories: [
+        makeStory({
+          external_id: "ext-cat-rec",
+          title: "Reconciling story",
+          image_url: "https://upstream.example/a.jpg",
+          category_slugs: ["ai-in-finance"],
+        }),
+      ],
+    };
+    const res2 = await POST(ingestRequest(second));
+    expect(res2.status).toBe(200);
+    const json2 = (await res2.json()) as {
+      results: Array<{ action: string }>;
+    };
+    expect(json2.results[0]!.action).toBe("updated");
+
+    const db = getDb();
+    const [row] = await db
+      .select()
+      .from(stories)
+      .where(eq(stories.externalId, "ext-cat-rec"));
+    const joins = await db
+      .select({ slug: categories.slug })
+      .from(storyCategories)
+      .innerJoin(
+        categories,
+        eq(storyCategories.categoryId, categories.id),
+      )
+      .where(eq(storyCategories.storyId, row!.id));
+    expect(joins.map((j) => j.slug)).toEqual(["ai-in-finance"]);
+  });
+
+  it("rejects a Story with an unseeded category slug; writes no story or join rows", async () => {
+    const batch = {
+      stories: [
+        makeStory({
+          external_id: "ext-bad-slug",
+          title: "Bad-slug story",
+          image_url: "https://upstream.example/a.jpg",
+          category_slugs: ["ai-in-spaceflight"],
+        }),
+      ],
+    };
+
+    const res = await POST(ingestRequest(batch));
+    expect(res.status).toBe(400);
+
+    const db = getDb();
+    const storyRows = await db
+      .select()
+      .from(stories)
+      .where(eq(stories.externalId, "ext-bad-slug"));
+    expect(storyRows).toHaveLength(0);
+
+    const allJoins = await db.select().from(storyCategories);
+    expect(allJoins).toHaveLength(0);
+  });
+
+  it("isolates a per-Story bad slug to the failing index in a multi-Story batch", async () => {
+    // The whole batch is rejected at zod (slice 0003 contract — even one
+    // bad Story rejects the batch), so no rows write. Verify the per-index
+    // error path identifies the bad Story.
+    const batch = {
+      stories: [
+        makeStory({
+          external_id: "ext-bad-1",
+          title: "Bad slug",
+          image_url: "https://upstream.example/a.jpg",
+          category_slugs: ["nope-not-real"],
+        }),
+        makeStory({
+          external_id: "ext-good-2",
+          title: "Good story",
+          image_url: "https://upstream.example/b.jpg",
+          category_slugs: ["ai-in-tech"],
+        }),
+      ],
+    };
+
+    const res = await POST(ingestRequest(batch));
+    expect(res.status).toBe(400);
+    const json = (await res.json()) as {
+      ok: boolean;
+      errors: Array<{ index: number; message: string }>;
+    };
+    expect(json.ok).toBe(false);
+    const indices = json.errors.map((e) => e.index);
+    expect(indices).toContain(0);
+    expect(indices).not.toContain(1);
+
+    const db = getDb();
+    const rows = await db.select().from(stories);
+    expect(rows).toHaveLength(0);
   });
 });

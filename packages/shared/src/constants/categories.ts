@@ -67,10 +67,9 @@ export const CATEGORIES = [
 
 export type CategorySlug = (typeof CATEGORIES)[number]["slug"];
 
-export const CATEGORY_SLUGS = CATEGORIES.map((c) => c.slug) as readonly [
-  CategorySlug,
-  ...CategorySlug[],
-];
+export const CATEGORY_SLUGS = CATEGORIES.map(
+  (c) => c.slug,
+) as unknown as readonly [CategorySlug, ...CategorySlug[]];
 
 export function isCategorySlug(value: string): value is CategorySlug {
   return (CATEGORY_SLUGS as readonly string[]).includes(value);

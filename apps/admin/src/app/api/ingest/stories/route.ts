@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { getDb, stories } from "@armal/shared/db";
+import { eq, inArray } from "drizzle-orm";
+import {
+  categories,
+  getDb,
+  stories,
+  storyCategories,
+} from "@armal/shared/db";
 import { resolveSlug } from "@armal/shared/lib/slugify";
 import {
   IngestBatch,
@@ -62,6 +67,19 @@ export async function POST(req: Request) {
   const results: IngestResult[] = [];
   const errors: IngestError[] = [];
 
+  // Categories are validated against the seeded list at zod, so this lookup
+  // is purely id-resolution. Nine rows total — single query, no caching.
+  const allSlugs = Array.from(
+    new Set(parsed.data.stories.flatMap((s) => s.category_slugs)),
+  );
+  const categoryRows = allSlugs.length
+    ? await db
+        .select({ id: categories.id, slug: categories.slug })
+        .from(categories)
+        .where(inArray(categories.slug, allSlugs))
+    : [];
+  const categoryIdBySlug = new Map(categoryRows.map((c) => [c.slug, c.id]));
+
   // Sequential: two new Stories with the same title must see each
   // other's chosen slug before the next collision check, otherwise
   // both pick the bare slug and the second insert dupes.
@@ -81,58 +99,112 @@ export async function POST(req: Request) {
       continue;
     }
 
-    const [existing] = await db
-      .select()
-      .from(stories)
-      .where(eq(stories.externalId, story.external_id))
-      .limit(1);
+    const categoryIds = story.category_slugs.map((slug) => {
+      const id = categoryIdBySlug.get(slug);
+      if (!id) {
+        // Defensive: zod already enforces seeded slugs, so this can only
+        // happen if the seed migration was rolled back mid-flight.
+        throw new Error(`category slug not found: ${slug}`);
+      }
+      return id;
+    });
 
-    if (existing) {
-      await db
-        .update(stories)
-        .set({
-          title: story.title,
-          shortSummary: story.short_summary,
-          bodyMarkdown: story.body_markdown,
-          imageUrl: cdnUrl,
-          sourceLink: story.source_link,
-        })
-        .where(eq(stories.externalId, story.external_id));
-      results.push({
-        index: i,
-        external_id: story.external_id,
-        slug: existing.slug,
-        action: "updated",
-      });
-    } else {
-      const slug = await resolveSlug(story.title, async (candidate) => {
-        const [hit] = await db
-          .select({ slug: stories.slug })
+    try {
+      // One transaction per Story: the stories upsert + the join reconciliation
+      // commit together, so a join failure rolls back the row write. The image
+      // upload to Storage already happened above (Storage is not transactional;
+      // re-runs reupload via upsert).
+      const txResult = await db.transaction(async (tx) => {
+        const [existing] = await tx
+          .select()
           .from(stories)
-          .where(eq(stories.slug, candidate))
+          .where(eq(stories.externalId, story.external_id))
           .limit(1);
-        return Boolean(hit);
-      });
 
-      const [inserted] = await db
-        .insert(stories)
-        .values({
-          externalId: story.external_id,
-          slug,
-          title: story.title,
-          shortSummary: story.short_summary,
-          bodyMarkdown: story.body_markdown,
-          imageUrl: cdnUrl,
-          sourceLink: story.source_link,
-          status: "draft",
-        })
-        .returning({ slug: stories.slug });
+        if (existing) {
+          await tx
+            .update(stories)
+            .set({
+              title: story.title,
+              shortSummary: story.short_summary,
+              bodyMarkdown: story.body_markdown,
+              imageUrl: cdnUrl,
+              sourceLink: story.source_link,
+            })
+            .where(eq(stories.externalId, story.external_id));
+
+          // Delete-then-insert keeps the writer simple. The join table has no
+          // other writers; OpenClaw is single-writer and the ingest loop is
+          // sequential, so the brief gap between delete and insert is not a
+          // visibility hazard — both run inside this row's transaction.
+          await tx
+            .delete(storyCategories)
+            .where(eq(storyCategories.storyId, existing.id));
+          if (categoryIds.length) {
+            await tx.insert(storyCategories).values(
+              categoryIds.map((cid) => ({
+                storyId: existing.id,
+                categoryId: cid,
+              })),
+            );
+          }
+
+          return {
+            slug: existing.slug,
+            action: "updated" as const,
+          };
+        }
+
+        const slug = await resolveSlug(story.title, async (candidate) => {
+          const [hit] = await tx
+            .select({ slug: stories.slug })
+            .from(stories)
+            .where(eq(stories.slug, candidate))
+            .limit(1);
+          return Boolean(hit);
+        });
+
+        const [inserted] = await tx
+          .insert(stories)
+          .values({
+            externalId: story.external_id,
+            slug,
+            title: story.title,
+            shortSummary: story.short_summary,
+            bodyMarkdown: story.body_markdown,
+            imageUrl: cdnUrl,
+            sourceLink: story.source_link,
+            status: "draft",
+          })
+          .returning({ id: stories.id, slug: stories.slug });
+
+        if (categoryIds.length) {
+          await tx.insert(storyCategories).values(
+            categoryIds.map((cid) => ({
+              storyId: inserted!.id,
+              categoryId: cid,
+            })),
+          );
+        }
+
+        return {
+          slug: inserted!.slug,
+          action: "inserted" as const,
+        };
+      });
 
       results.push({
         index: i,
         external_id: story.external_id,
-        slug: inserted!.slug,
-        action: "inserted",
+        slug: txResult.slug,
+        action: txResult.action,
+      });
+    } catch (e) {
+      errors.push({
+        index: i,
+        message: `${story.external_id}: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
       });
     }
   }
