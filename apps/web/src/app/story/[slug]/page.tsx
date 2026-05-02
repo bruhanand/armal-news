@@ -15,14 +15,12 @@ export default async function StoryPage({
   return (
     <main>
       <article>
-        {story.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={story.imageUrl}
-            alt=""
-            style={{ width: "100%", marginBottom: "16px" }}
-          />
-        ) : null}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={story.imageUrl}
+          alt=""
+          style={{ width: "100%", marginBottom: "16px" }}
+        />
         <h1>{story.title}</h1>
         <p style={{ fontStyle: "italic", color: "#444" }}>
           {story.shortSummary}

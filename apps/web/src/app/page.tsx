@@ -30,29 +30,17 @@ export default async function HomePage() {
           padding: "24px",
         }}
       >
-        <div
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={latest.imageUrl}
+          alt=""
           style={{
             width: "100%",
             aspectRatio: "16 / 9",
-            background: "#eee",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#888",
+            objectFit: "cover",
             marginBottom: "16px",
           }}
-        >
-          {latest.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={latest.imageUrl}
-              alt=""
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          ) : (
-            <span>[image stub]</span>
-          )}
-        </div>
+        />
         <h1 style={{ marginTop: 0 }}>{latest.title}</h1>
         <p style={{ fontStyle: "italic", color: "#444" }}>
           {latest.shortSummary}
