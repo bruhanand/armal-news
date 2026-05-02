@@ -57,9 +57,15 @@ const fetchMock = vi.fn();
 beforeEach(() => {
   fetchMock.mockReset();
   uploadMock.mockReset();
-  uploadMock.mockImplementation(async ({ externalId }) => ({
-    publicUrl: `https://test.supabase.co/storage/v1/object/public/story-images/${externalId}.jpg`,
-  }));
+  uploadMock.mockImplementation(async ({ externalId, contentType }) => {
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowed.includes(contentType)) {
+      throw new Error(`unsupported image content-type: ${contentType}`);
+    }
+    return {
+      publicUrl: `https://test.supabase.co/storage/v1/object/public/story-images/${externalId}.jpg`,
+    };
+  });
   vi.stubGlobal("fetch", fetchMock);
 });
 
@@ -150,7 +156,7 @@ describe("POST /api/ingest/stories — image pipeline", () => {
       errors: Array<{ index: number; message: string }>;
     };
 
-    expect(json.ok).toBe(true);
+    expect(json.ok).toBe(false);
     expect(json.results.map((r) => r.external_id).sort()).toEqual([
       "ok-1",
       "ok-2",

@@ -1,15 +1,7 @@
-import { afterAll, beforeEach } from "vitest";
-import postgres from "postgres";
-
-const url = process.env.DATABASE_URL;
-if (!url) throw new Error("DATABASE_URL must be set to run integration tests");
-
-const sql = postgres(url, { max: 1 });
+import { beforeEach } from "vitest";
+import { sql } from "drizzle-orm";
+import { getDb } from "@armal/shared/db";
 
 beforeEach(async () => {
-  await sql`TRUNCATE TABLE stories RESTART IDENTITY CASCADE`;
-});
-
-afterAll(async () => {
-  await sql.end();
+  await getDb().execute(sql`TRUNCATE TABLE stories RESTART IDENTITY CASCADE`);
 });

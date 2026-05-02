@@ -9,10 +9,6 @@ const EXT_FOR_CONTENT_TYPE: Record<string, string> = {
   "image/gif": "gif",
 };
 
-export const ALLOWED_IMAGE_CONTENT_TYPES: ReadonlySet<string> = new Set(
-  Object.keys(EXT_FOR_CONTENT_TYPE),
-);
-
 let cached: SupabaseClient | null = null;
 
 function getClient(): SupabaseClient {
@@ -25,17 +21,11 @@ function getClient(): SupabaseClient {
   return cached;
 }
 
-export type UploadStoryImageInput = {
+export async function uploadStoryImage(input: {
   externalId: string;
   contentType: string;
   body: ArrayBuffer | Uint8Array | Blob;
-};
-
-export type UploadStoryImageResult = { publicUrl: string };
-
-export async function uploadStoryImage(
-  input: UploadStoryImageInput,
-): Promise<UploadStoryImageResult> {
+}): Promise<{ publicUrl: string }> {
   const ext = EXT_FOR_CONTENT_TYPE[input.contentType];
   if (!ext) {
     throw new Error(`unsupported image content-type: ${input.contentType}`);

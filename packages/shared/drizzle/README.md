@@ -14,10 +14,7 @@ the migration will fail with a `column contains null values` error.
 
 ## 0002_wet_stryfe
 
-Flips `image_url` from nullable to `NOT NULL`. US 26 mandates every
-Story has an image, and slice 0003's ingest pipeline now uploads to
-Supabase Storage and writes the resulting CDN URL — no Story should
-ever land in the table without one. No backfill default is provided
-on purpose; that would mask the invariant. If your local DB has rows
-from earlier slices with NULL `image_url`, either backfill them or run
-`TRUNCATE TABLE stories;` before applying. Prod has no rows yet.
+Flips `image_url` from nullable to `NOT NULL`. No backfill default —
+that would mask the invariant. If your local DB has rows with NULL
+`image_url`, either backfill or `TRUNCATE TABLE stories;` before
+applying.

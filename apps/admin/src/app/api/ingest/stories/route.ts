@@ -6,10 +6,7 @@ import {
   IngestBatch,
   type IngestStoryV1,
 } from "@armal/shared/validation/story";
-import {
-  ALLOWED_IMAGE_CONTENT_TYPES,
-  uploadStoryImage,
-} from "@/lib/storage";
+import { uploadStoryImage } from "@/lib/storage";
 
 type IngestResult = {
   index: number;
@@ -29,16 +26,10 @@ async function fetchAndUploadImage(story: IngestStoryV1): Promise<string> {
   }
   const contentType =
     res.headers.get("content-type")?.split(";")[0]?.trim() ?? "";
-  if (!ALLOWED_IMAGE_CONTENT_TYPES.has(contentType)) {
-    throw new Error(
-      `unsupported image content-type: ${contentType || "unknown"}`,
-    );
-  }
-  const body = new Uint8Array(await res.arrayBuffer());
   const { publicUrl } = await uploadStoryImage({
     externalId: story.external_id,
     contentType,
-    body,
+    body: await res.arrayBuffer(),
   });
   return publicUrl;
 }
@@ -71,11 +62,9 @@ export async function POST(req: Request) {
   const results: IngestResult[] = [];
   const errors: IngestError[] = [];
 
-  // tags + category_slugs persisted in slice 0004.
-  // Sequential on purpose: two new Stories with the same title in one
-  // batch must see each other's chosen slug before the next collision
-  // check runs, otherwise both would pick the bare slug and the second
-  // insert would hit the unique constraint.
+  // Sequential: two new Stories with the same title must see each
+  // other's chosen slug before the next collision check, otherwise
+  // both pick the bare slug and the second insert dupes.
   for (let i = 0; i < parsed.data.stories.length; i++) {
     const story: IngestStoryV1 = parsed.data.stories[i]!;
 
@@ -148,5 +137,5 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, results, errors });
+  return NextResponse.json({ ok: errors.length === 0, results, errors });
 }
