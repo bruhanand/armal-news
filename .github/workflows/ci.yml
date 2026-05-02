@@ -6,8 +6,24 @@ on:
     branches: [main]
 
 jobs:
-  typecheck:
+  typecheck-and-test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: armal
+          POSTGRES_PASSWORD: armal
+          POSTGRES_DB: armal_news
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U armal -d armal_news"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://armal:armal@localhost:5432/armal_news
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -19,4 +35,5 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
+      - run: pnpm db:migrate
       - run: pnpm test
