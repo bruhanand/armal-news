@@ -93,6 +93,24 @@ Key points (full reasoning lives in [`docs/adr/`](docs/adr/)):
 
 Locked in [`CONTEXT.md`](CONTEXT.md). High-level: English only, no audio, anonymous reading, vertical-snap card feed, nine seeded categories with one-at-a-time filtering, free-form tags surfaced on deep-dive only, light/dark theme, SSR'd shareable `/story/[slug]` URLs, native share on mobile, desktop-only PWA install. Out of scope: user accounts, onboarding, Hindi/TTS, premium features, AI Journey Timeline, Editor Agent QA. See [`docs/prd/0001-mvp.md`](docs/prd/0001-mvp.md) for the full PRD.
 
+## Storage setup (one-time)
+
+Story images are stored in a Supabase Storage bucket called `story-images`. Postgres for local dev runs in docker-compose, but Storage is always cloud Supabase (per [ADR-0003](docs/adr/0003-personal-cms-topology.md) — readers must be served when the admin's MacBook sleeps).
+
+Create the bucket once in the Supabase dashboard:
+
+1. Open the Supabase project → **Storage** → **New bucket**.
+2. Name: `story-images`. **Public bucket: ON** (readers fetch CDN URLs anonymously).
+3. No upload policy is required — the admin app uses the service-role key, which bypasses RLS.
+4. Copy the project URL and the **service-role** key from **Settings → API** into your local `.env`:
+
+   ```env
+   SUPABASE_URL=https://<your-project>.supabase.co
+   SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+   ```
+
+The service-role key is for `apps/admin` only. Do **not** put it in `apps/web`'s environment — the web app only needs `SUPABASE_URL` (used by `next.config` to whitelist the CDN host for `next/image`).
+
 ## Constraints
 
 - **Do not use the Supabase MCP server** for this project. The `mcp__claude_ai_Supabase__*` tools are connected to a different project and would target the wrong database. Treat Supabase as vanilla Postgres + Storage; manage migrations by hand via `drizzle-kit` + the `supabase` CLI / `psql`. See [`CLAUDE.md`](CLAUDE.md).
