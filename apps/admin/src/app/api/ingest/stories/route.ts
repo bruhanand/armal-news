@@ -6,6 +6,10 @@ import {
   IngestBatch,
   type IngestStoryV1,
 } from "@armal/shared/validation/story";
+import {
+  ALLOWED_IMAGE_CONTENT_TYPES,
+  uploadStoryImage,
+} from "@/lib/storage";
 
 type IngestResult = {
   index: number;
@@ -13,6 +17,31 @@ type IngestResult = {
   slug: string;
   action: "inserted" | "updated";
 };
+
+type IngestError = { index: number; message: string };
+
+async function fetchAndUploadImage(story: IngestStoryV1): Promise<string> {
+  const res = await fetch(story.image_url);
+  if (!res.ok) {
+    throw new Error(
+      `image fetch failed (${res.status}) for ${story.image_url}`,
+    );
+  }
+  const contentType =
+    res.headers.get("content-type")?.split(";")[0]?.trim() ?? "";
+  if (!ALLOWED_IMAGE_CONTENT_TYPES.has(contentType)) {
+    throw new Error(
+      `unsupported image content-type: ${contentType || "unknown"}`,
+    );
+  }
+  const body = new Uint8Array(await res.arrayBuffer());
+  const { publicUrl } = await uploadStoryImage({
+    externalId: story.external_id,
+    contentType,
+    body,
+  });
+  return publicUrl;
+}
 
 export async function POST(req: Request) {
   let body: unknown;
@@ -40,6 +69,7 @@ export async function POST(req: Request) {
 
   const db = getDb();
   const results: IngestResult[] = [];
+  const errors: IngestError[] = [];
 
   // tags + category_slugs persisted in slice 0004.
   // Sequential on purpose: two new Stories with the same title in one
@@ -48,6 +78,20 @@ export async function POST(req: Request) {
   // insert would hit the unique constraint.
   for (let i = 0; i < parsed.data.stories.length; i++) {
     const story: IngestStoryV1 = parsed.data.stories[i]!;
+
+    let cdnUrl: string;
+    try {
+      cdnUrl = await fetchAndUploadImage(story);
+    } catch (e) {
+      errors.push({
+        index: i,
+        message: `${story.external_id}: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+      });
+      continue;
+    }
+
     const [existing] = await db
       .select()
       .from(stories)
@@ -61,7 +105,7 @@ export async function POST(req: Request) {
           title: story.title,
           shortSummary: story.short_summary,
           bodyMarkdown: story.body_markdown,
-          imageUrl: story.image_url,
+          imageUrl: cdnUrl,
           sourceLink: story.source_link,
         })
         .where(eq(stories.externalId, story.external_id));
@@ -89,7 +133,7 @@ export async function POST(req: Request) {
           title: story.title,
           shortSummary: story.short_summary,
           bodyMarkdown: story.body_markdown,
-          imageUrl: story.image_url,
+          imageUrl: cdnUrl,
           sourceLink: story.source_link,
           status: "draft",
         })
@@ -104,5 +148,5 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, results });
+  return NextResponse.json({ ok: true, results, errors });
 }
