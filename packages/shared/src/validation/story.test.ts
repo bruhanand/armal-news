@@ -68,6 +68,53 @@ describe("IngestStoryV1", () => {
       IngestStoryV1.safeParse({ ...validStory, category_slugs: [] }).success,
     ).toBe(false);
   });
+
+  it("rejects an unseeded category slug", () => {
+    const result = IngestStoryV1.safeParse({
+      ...validStory,
+      category_slugs: ["ai-in-spaceflight"],
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const slugIssue = result.error.issues.find(
+        (i) => i.path[0] === "category_slugs",
+      );
+      expect(slugIssue).toBeDefined();
+    }
+  });
+
+  it("rejects a mix of seeded + unseeded slugs and pinpoints the bad index", () => {
+    const result = IngestStoryV1.safeParse({
+      ...validStory,
+      category_slugs: ["ai-in-tech", "not-a-real-category", "ai-in-robotics"],
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const badIssue = result.error.issues.find(
+        (i) => i.path[0] === "category_slugs" && i.path[1] === 1,
+      );
+      expect(badIssue).toBeDefined();
+    }
+  });
+
+  it("accepts every seeded slug", () => {
+    const all = [
+      "ai-in-tech",
+      "ai-in-finance",
+      "ai-in-healthcare",
+      "ai-in-robotics",
+      "ai-in-cooking",
+      "ai-in-education",
+      "ai-research",
+      "ai-tools",
+      "ai-policy-safety",
+    ];
+    const result = IngestStoryV1.safeParse({
+      ...validStory,
+      category_slugs: all,
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("IngestBatch", () => {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CATEGORY_SLUGS } from "../constants/categories";
 
 export const IngestStoryV1 = z.object({
   external_id: z.string().min(1),
@@ -8,7 +9,7 @@ export const IngestStoryV1 = z.object({
   image_url: z.string().url(),
   source_link: z.string().url(),
   tags: z.array(z.string()).default([]),
-  category_slugs: z.array(z.string()).min(1),
+  category_slugs: z.array(z.enum(CATEGORY_SLUGS)).min(1),
 });
 
 export type IngestStoryV1 = z.infer<typeof IngestStoryV1>;
