@@ -5,64 +5,66 @@
 // pipeline both read from this array — do not hardcode the slug list anywhere
 // else.
 //
-// sort_order is in increments of 10 so future inserts can land in between
-// without a backfill.
+// sortOrder is in increments of 10 so future inserts can land in between
+// without a backfill. Note the deliberate name skew: the SQL column is
+// `sort_order` (snake_case, Postgres convention) and Drizzle maps it to
+// `sortOrder` for TS callers.
 
 export const CATEGORIES = [
-  { slug: "ai-in-tech", name: "AI in Tech", iconKey: "tech", sort_order: 10 },
+  { slug: "ai-in-tech", name: "AI in Tech", iconKey: "tech", sortOrder: 10 },
   {
     slug: "ai-in-finance",
     name: "AI in Finance",
     iconKey: "finance",
-    sort_order: 20,
+    sortOrder: 20,
   },
   {
     slug: "ai-in-healthcare",
     name: "AI in Healthcare",
     iconKey: "healthcare",
-    sort_order: 30,
+    sortOrder: 30,
   },
   {
     slug: "ai-in-robotics",
     name: "AI in Robotics",
     iconKey: "robotics",
-    sort_order: 40,
+    sortOrder: 40,
   },
   {
     slug: "ai-in-cooking",
     name: "AI in Cooking",
     iconKey: "cooking",
-    sort_order: 50,
+    sortOrder: 50,
   },
   {
     slug: "ai-in-education",
     name: "AI in Education",
     iconKey: "education",
-    sort_order: 60,
+    sortOrder: 60,
   },
   {
     slug: "ai-research",
     name: "AI Research & Models",
     iconKey: "research",
-    sort_order: 70,
+    sortOrder: 70,
   },
   {
     slug: "ai-tools",
     name: "AI Tools & Products",
     iconKey: "tools",
-    sort_order: 80,
+    sortOrder: 80,
   },
   {
     slug: "ai-policy-safety",
     name: "AI Policy & Safety",
     iconKey: "policy",
-    sort_order: 90,
+    sortOrder: 90,
   },
 ] as const satisfies ReadonlyArray<{
   slug: string;
   name: string;
   iconKey: string;
-  sort_order: number;
+  sortOrder: number;
 }>;
 
 export type CategorySlug = (typeof CATEGORIES)[number]["slug"];

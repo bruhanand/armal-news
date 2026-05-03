@@ -19,6 +19,11 @@ export async function publishStory(id: string) {
 }
 
 export async function updateStoryCategories(storyId: string, formData: FormData) {
+  // storyId is intentionally passed through without UUID validation: this
+  // server action is gated by the Tailscale-only admin app + no-auth model
+  // (ADR-0001 / ADR-0003). A malformed id surfaces as a Postgres cast error,
+  // which is acceptable at this trust boundary. Don't add string-shape
+  // validation here without first revisiting those ADRs.
   const slugs = formData.getAll("category_slugs").map(String);
   for (const slug of slugs) {
     if (!isCategorySlug(slug)) {
