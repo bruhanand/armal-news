@@ -89,6 +89,18 @@ export async function getCategoryIdsBySlug(
   });
 }
 
+// Single SELECT of every seeded Category. Use this when a caller needs to
+// resolve many (slug → id) lookups in a tight loop (e.g. ingest batches) —
+// resolves once per batch instead of once per Story.
+export async function loadCategoryIdMap(
+  db: Db | Tx,
+): Promise<Map<string, string>> {
+  const rows = await db
+    .select({ id: categories.id, slug: categories.slug })
+    .from(categories);
+  return new Map(rows.map((r) => [r.slug, r.id]));
+}
+
 // Delete-then-insert reconciliation. The join has no other writers
 // (OpenClaw is single-writer; the ingest loop is sequential) and the
 // caller wraps this in a transaction, so the brief gap is not a

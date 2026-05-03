@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb, stories } from "@armal/shared/db";
 import {
-  getCategoryIdsBySlug,
+  loadCategoryIdMap,
   setStoryCategories,
 } from "@armal/shared/db/queries";
 import { resolveSlug } from "@armal/shared/lib/slugify";
@@ -63,6 +63,13 @@ export async function POST(req: Request) {
   }
 
   const db = getDb();
+  // One SELECT for every seeded Category up-front. The set is fixed (9 rows
+  // for slice 0004) and the per-batch ingest is the hot path, so resolving
+  // slug→id once here is strictly cheaper than re-querying inside each
+  // per-Story transaction. zod has already constrained slugs to the seeded
+  // enum, so a missing entry means the seed migration was rolled back.
+  const categoryIdBySlug = await loadCategoryIdMap(db);
+
   const results: IngestResult[] = [];
   const errors: IngestError[] = [];
 
@@ -86,16 +93,17 @@ export async function POST(req: Request) {
     }
 
     try {
+      const categoryIds = story.category_slugs.map((slug) => {
+        const id = categoryIdBySlug.get(slug);
+        if (!id) throw new Error(`category slug not found: ${slug}`);
+        return id;
+      });
+
       // One transaction per Story: the stories upsert + the join reconciliation
       // commit together, so a join failure rolls back the row write. The image
       // upload to Storage already happened above (Storage is not transactional;
       // re-runs reupload via upsert).
       const txResult = await db.transaction(async (tx) => {
-        const categoryIds = await getCategoryIdsBySlug(
-          tx,
-          story.category_slugs,
-        );
-
         const [existing] = await tx
           .select()
           .from(stories)
