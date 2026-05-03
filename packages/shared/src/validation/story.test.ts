@@ -97,6 +97,21 @@ describe("IngestStoryV1", () => {
     }
   });
 
+  it("rejects a duplicated category slug", () => {
+    const result = IngestStoryV1.safeParse({
+      ...validStory,
+      category_slugs: ["ai-in-tech", "ai-in-tech"],
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const dupIssue = result.error.issues.find(
+        (i) => i.path[0] === "category_slugs",
+      );
+      expect(dupIssue).toBeDefined();
+      expect(dupIssue!.message).toMatch(/unique/);
+    }
+  });
+
   it("accepts every seeded slug", () => {
     const all = [
       "ai-in-tech",

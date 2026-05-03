@@ -9,7 +9,12 @@ export const IngestStoryV1 = z.object({
   image_url: z.string().url(),
   source_link: z.string().url(),
   tags: z.array(z.string()).default([]),
-  category_slugs: z.array(z.enum(CATEGORY_SLUGS)).min(1),
+  category_slugs: z
+    .array(z.enum(CATEGORY_SLUGS))
+    .min(1)
+    .refine((arr) => new Set(arr).size === arr.length, {
+      message: "category_slugs must be unique",
+    }),
 });
 
 export type IngestStoryV1 = z.infer<typeof IngestStoryV1>;

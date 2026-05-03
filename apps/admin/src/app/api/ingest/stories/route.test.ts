@@ -405,6 +405,38 @@ describe("POST /api/ingest/stories — category persistence", () => {
     expect(allJoins).toHaveLength(0);
   });
 
+  it("rejects a duplicate category_slugs entry at validation, not via DB error", async () => {
+    const batch = {
+      stories: [
+        makeStory({
+          external_id: "ext-dup-slug",
+          title: "Duplicate-slug story",
+          image_url: "https://upstream.example/a.jpg",
+          category_slugs: ["ai-in-tech", "ai-in-tech"],
+        }),
+      ],
+    };
+
+    const res = await POST(ingestRequest(batch));
+    expect(res.status).toBe(400);
+    const json = (await res.json()) as {
+      ok: boolean;
+      errors: Array<{ index: number; message: string }>;
+    };
+    expect(json.ok).toBe(false);
+    const issue = json.errors.find((e) => e.index === 0);
+    expect(issue).toBeDefined();
+    expect(issue!.message).toMatch(/unique/);
+    expect(issue!.message).not.toMatch(/duplicate key|story_categories_pkey/i);
+
+    const db = getDb();
+    const rows = await db.select().from(stories);
+    expect(rows).toHaveLength(0);
+    const allJoins = await db.select().from(storyCategories);
+    expect(allJoins).toHaveLength(0);
+    expect(uploadMock).not.toHaveBeenCalled();
+  });
+
   it("isolates a per-Story bad slug to the failing index in a multi-Story batch", async () => {
     // The whole batch is rejected at zod (slice 0003 contract — even one
     // bad Story rejects the batch), so no rows write. Verify the per-index
