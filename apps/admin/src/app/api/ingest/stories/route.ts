@@ -1,6 +1,16 @@
+// Response envelope for batch writes:
+//   { ok: boolean, results: IngestResult[], errors: IngestError[] }
+// Per-item results are required because HTTP status alone can't express partial
+// success — one bad Story shouldn't roll back the others' writes. HTTP status is
+// 200 when every Story succeeded and 400 when any did not. Read-side endpoints
+// use a thinner shape — see apps/web/src/app/api/feed/route.ts.
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb, stories } from "@armal/shared/db";
+import {
+  loadCategoryIdMap,
+  setStoryCategories,
+} from "@armal/shared/db/queries";
 import { resolveSlug } from "@armal/shared/lib/slugify";
 import {
   IngestBatch,
@@ -59,6 +69,13 @@ export async function POST(req: Request) {
   }
 
   const db = getDb();
+  // One SELECT for every seeded Category up-front. The set is fixed (9 rows
+  // for slice 0004) and the per-batch ingest is the hot path, so resolving
+  // slug→id once here is strictly cheaper than re-querying inside each
+  // per-Story transaction. zod has already constrained slugs to the seeded
+  // enum, so a missing entry means the seed migration was rolled back.
+  const categoryIdBySlug = await loadCategoryIdMap(db);
+
   const results: IngestResult[] = [];
   const errors: IngestError[] = [];
 
@@ -81,58 +98,87 @@ export async function POST(req: Request) {
       continue;
     }
 
-    const [existing] = await db
-      .select()
-      .from(stories)
-      .where(eq(stories.externalId, story.external_id))
-      .limit(1);
-
-    if (existing) {
-      await db
-        .update(stories)
-        .set({
-          title: story.title,
-          shortSummary: story.short_summary,
-          bodyMarkdown: story.body_markdown,
-          imageUrl: cdnUrl,
-          sourceLink: story.source_link,
-        })
-        .where(eq(stories.externalId, story.external_id));
-      results.push({
-        index: i,
-        external_id: story.external_id,
-        slug: existing.slug,
-        action: "updated",
+    try {
+      const categoryIds = story.category_slugs.map((slug) => {
+        const id = categoryIdBySlug.get(slug);
+        if (!id) throw new Error(`category slug not found: ${slug}`);
+        return id;
       });
-    } else {
-      const slug = await resolveSlug(story.title, async (candidate) => {
-        const [hit] = await db
-          .select({ slug: stories.slug })
+
+      // One transaction per Story: the stories upsert + the join reconciliation
+      // commit together, so a join failure rolls back the row write. The image
+      // upload to Storage already happened above (Storage is not transactional;
+      // re-runs reupload via upsert).
+      const txResult = await db.transaction(async (tx) => {
+        const [existing] = await tx
+          .select()
           .from(stories)
-          .where(eq(stories.slug, candidate))
+          .where(eq(stories.externalId, story.external_id))
           .limit(1);
-        return Boolean(hit);
-      });
 
-      const [inserted] = await db
-        .insert(stories)
-        .values({
-          externalId: story.external_id,
-          slug,
-          title: story.title,
-          shortSummary: story.short_summary,
-          bodyMarkdown: story.body_markdown,
-          imageUrl: cdnUrl,
-          sourceLink: story.source_link,
-          status: "draft",
-        })
-        .returning({ slug: stories.slug });
+        if (existing) {
+          await tx
+            .update(stories)
+            .set({
+              title: story.title,
+              shortSummary: story.short_summary,
+              bodyMarkdown: story.body_markdown,
+              imageUrl: cdnUrl,
+              sourceLink: story.source_link,
+            })
+            .where(eq(stories.externalId, story.external_id));
+
+          await setStoryCategories(tx, existing.id, categoryIds);
+
+          return {
+            slug: existing.slug,
+            action: "updated" as const,
+          };
+        }
+
+        const slug = await resolveSlug(story.title, async (candidate) => {
+          const [hit] = await tx
+            .select({ slug: stories.slug })
+            .from(stories)
+            .where(eq(stories.slug, candidate))
+            .limit(1);
+          return Boolean(hit);
+        });
+
+        const [inserted] = await tx
+          .insert(stories)
+          .values({
+            externalId: story.external_id,
+            slug,
+            title: story.title,
+            shortSummary: story.short_summary,
+            bodyMarkdown: story.body_markdown,
+            imageUrl: cdnUrl,
+            sourceLink: story.source_link,
+            status: "draft",
+          })
+          .returning({ id: stories.id, slug: stories.slug });
+
+        await setStoryCategories(tx, inserted!.id, categoryIds);
+
+        return {
+          slug: inserted!.slug,
+          action: "inserted" as const,
+        };
+      });
 
       results.push({
         index: i,
         external_id: story.external_id,
-        slug: inserted!.slug,
-        action: "inserted",
+        slug: txResult.slug,
+        action: txResult.action,
+      });
+    } catch (e) {
+      errors.push({
+        index: i,
+        message: `${story.external_id}: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
       });
     }
   }

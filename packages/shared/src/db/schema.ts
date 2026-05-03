@@ -1,4 +1,12 @@
-import { pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  integer,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 export const storyStatus = pgEnum("story_status", [
   "draft",
@@ -28,3 +36,29 @@ export const stories = pgTable("stories", {
 
 export type Story = typeof stories.$inferSelect;
 export type NewStory = typeof stories.$inferInsert;
+
+export const categories = pgTable("categories", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+  sortOrder: integer("sort_order").notNull(),
+});
+
+export type Category = typeof categories.$inferSelect;
+
+export const storyCategories = pgTable(
+  "story_categories",
+  {
+    storyId: uuid("story_id")
+      .notNull()
+      .references(() => stories.id, { onDelete: "cascade" }),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "restrict" }),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.storyId, t.categoryId] }),
+  }),
+);
+
+export type StoryCategory = typeof storyCategories.$inferSelect;
