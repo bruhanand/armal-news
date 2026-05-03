@@ -1,5 +1,4 @@
-import { eq } from "drizzle-orm";
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   categories,
   getDb,
@@ -10,6 +9,18 @@ import { listCategories, listPublishedStories } from "./queries";
 
 const haveDb = Boolean(process.env.DATABASE_URL);
 const itDb = haveDb ? it : it.skip;
+
+// Categories survive between tests (TRUNCATE on stories cascades only to
+// story_categories), so the slug→id map is stable across the suite.
+let categoryIdCache: Map<string, string> | null = null;
+async function categoryIdMap(): Promise<Map<string, string>> {
+  if (categoryIdCache) return categoryIdCache;
+  const rows = await getDb()
+    .select({ id: categories.id, slug: categories.slug })
+    .from(categories);
+  categoryIdCache = new Map(rows.map((r) => [r.slug, r.id]));
+  return categoryIdCache;
+}
 
 async function makeStory(opts: {
   externalId: string;
@@ -35,10 +46,7 @@ async function makeStory(opts: {
     .returning({ id: stories.id });
 
   if (opts.categorySlugs?.length) {
-    const cats = await db
-      .select({ id: categories.id, slug: categories.slug })
-      .from(categories);
-    const idBySlug = new Map(cats.map((c) => [c.slug, c.id]));
+    const idBySlug = await categoryIdMap();
     await db.insert(storyCategories).values(
       opts.categorySlugs.map((slug) => ({
         storyId: row!.id,
@@ -71,14 +79,6 @@ describe("listCategories", () => {
 });
 
 describe("listPublishedStories", () => {
-  beforeEach(async () => {
-    if (!haveDb) return;
-    // Re-truncate to be safe; setup.ts also runs.
-    const db = getDb();
-    await db.delete(storyCategories);
-    await db.delete(stories);
-  });
-
   itDb("excludes drafts (and rejected)", async () => {
     await makeStory({
       externalId: "pub-1",
@@ -177,6 +177,3 @@ describe("listPublishedStories", () => {
     expect(rows).toHaveLength(2);
   });
 });
-
-// Suppress an "unused import" warning when the DB tests are skipped.
-void eq;

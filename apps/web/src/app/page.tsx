@@ -21,16 +21,11 @@ export default async function HomePage({
     listPublishedStories({ category: activeSlug ?? undefined }),
   ]);
 
-  const activeName = activeSlug
-    ? (allCategories.find((c) => c.slug === activeSlug)?.name ?? null)
-    : null;
-
   return (
     <main>
       <CategoryControls
         categories={allCategories.map((c) => ({ slug: c.slug, name: c.name }))}
         activeSlug={activeSlug}
-        activeName={activeName}
       />
 
       {published.length === 0 ? (

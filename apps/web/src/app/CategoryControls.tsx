@@ -8,12 +8,13 @@ type Category = { slug: string; name: string };
 type Props = {
   categories: Category[];
   activeSlug: string | null;
-  activeName: string | null;
 };
 
-export function CategoryControls({ categories, activeSlug, activeName }: Props) {
+export function CategoryControls({ categories, activeSlug }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const activeName =
+    activeSlug && (categories.find((c) => c.slug === activeSlug)?.name ?? activeSlug);
 
   function navigate(href: string) {
     setOpen(false);
@@ -59,10 +60,10 @@ export function CategoryControls({ categories, activeSlug, activeName }: Props) 
               background: "#f0f0f0",
             }}
           >
-            {activeName ?? activeSlug}
+            {activeName}
             <button
               type="button"
-              aria-label={`Clear ${activeName ?? activeSlug} filter`}
+              aria-label={`Clear ${activeName} filter`}
               onClick={() => navigate("/")}
               style={{
                 background: "transparent",

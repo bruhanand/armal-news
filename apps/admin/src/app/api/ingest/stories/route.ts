@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import { getDb, stories } from "@armal/shared/db";
 import {
-  categories,
-  getDb,
-  stories,
-  storyCategories,
-} from "@armal/shared/db";
+  getCategoryIdsBySlug,
+  setStoryCategories,
+} from "@armal/shared/db/queries";
 import { resolveSlug } from "@armal/shared/lib/slugify";
 import {
   IngestBatch,
@@ -67,19 +66,6 @@ export async function POST(req: Request) {
   const results: IngestResult[] = [];
   const errors: IngestError[] = [];
 
-  // Categories are validated against the seeded list at zod, so this lookup
-  // is purely id-resolution. Nine rows total — single query, no caching.
-  const allSlugs = Array.from(
-    new Set(parsed.data.stories.flatMap((s) => s.category_slugs)),
-  );
-  const categoryRows = allSlugs.length
-    ? await db
-        .select({ id: categories.id, slug: categories.slug })
-        .from(categories)
-        .where(inArray(categories.slug, allSlugs))
-    : [];
-  const categoryIdBySlug = new Map(categoryRows.map((c) => [c.slug, c.id]));
-
   // Sequential: two new Stories with the same title must see each
   // other's chosen slug before the next collision check, otherwise
   // both pick the bare slug and the second insert dupes.
@@ -99,22 +85,17 @@ export async function POST(req: Request) {
       continue;
     }
 
-    const categoryIds = story.category_slugs.map((slug) => {
-      const id = categoryIdBySlug.get(slug);
-      if (!id) {
-        // Defensive: zod already enforces seeded slugs, so this can only
-        // happen if the seed migration was rolled back mid-flight.
-        throw new Error(`category slug not found: ${slug}`);
-      }
-      return id;
-    });
-
     try {
       // One transaction per Story: the stories upsert + the join reconciliation
       // commit together, so a join failure rolls back the row write. The image
       // upload to Storage already happened above (Storage is not transactional;
       // re-runs reupload via upsert).
       const txResult = await db.transaction(async (tx) => {
+        const categoryIds = await getCategoryIdsBySlug(
+          tx,
+          story.category_slugs,
+        );
+
         const [existing] = await tx
           .select()
           .from(stories)
@@ -133,21 +114,7 @@ export async function POST(req: Request) {
             })
             .where(eq(stories.externalId, story.external_id));
 
-          // Delete-then-insert keeps the writer simple. The join table has no
-          // other writers; OpenClaw is single-writer and the ingest loop is
-          // sequential, so the brief gap between delete and insert is not a
-          // visibility hazard — both run inside this row's transaction.
-          await tx
-            .delete(storyCategories)
-            .where(eq(storyCategories.storyId, existing.id));
-          if (categoryIds.length) {
-            await tx.insert(storyCategories).values(
-              categoryIds.map((cid) => ({
-                storyId: existing.id,
-                categoryId: cid,
-              })),
-            );
-          }
+          await setStoryCategories(tx, existing.id, categoryIds);
 
           return {
             slug: existing.slug,
@@ -178,14 +145,7 @@ export async function POST(req: Request) {
           })
           .returning({ id: stories.id, slug: stories.slug });
 
-        if (categoryIds.length) {
-          await tx.insert(storyCategories).values(
-            categoryIds.map((cid) => ({
-              storyId: inserted!.id,
-              categoryId: cid,
-            })),
-          );
-        }
+        await setStoryCategories(tx, inserted!.id, categoryIds);
 
         return {
           slug: inserted!.slug,

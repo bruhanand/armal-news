@@ -12,13 +12,14 @@ export const dynamic = "force-dynamic";
 
 export default async function DraftsPage() {
   const db = getDb();
-  const drafts = await db
-    .select()
-    .from(stories)
-    .where(eq(stories.status, "draft"))
-    .orderBy(desc(stories.createdAt));
-
-  const allCategories = await listCategories();
+  const [drafts, allCategories] = await Promise.all([
+    db
+      .select()
+      .from(stories)
+      .where(eq(stories.status, "draft"))
+      .orderBy(desc(stories.createdAt)),
+    listCategories(),
+  ]);
 
   const draftIds = drafts.map((d) => d.id);
   const joinRows = draftIds.length

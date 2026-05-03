@@ -1,5 +1,5 @@
-import { and, asc, desc, eq } from "drizzle-orm";
-import { getDb } from "./client";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { getDb, type Db } from "./client";
 import {
   categories,
   stories,
@@ -7,6 +7,10 @@ import {
   type Category,
   type Story,
 } from "./schema";
+import type { CategorySlug } from "../constants/categories";
+
+// A Drizzle transaction handle is structurally a Db with the same query API.
+export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
 export async function getPublishedStoryBySlug(
   slug: string,
@@ -29,7 +33,8 @@ export async function listCategories(): Promise<Category[]> {
 }
 
 export type ListPublishedStoriesArgs = {
-  category?: string;
+  category?: CategorySlug;
+  // cursor pagination lands in 0007.
   cursor?: string;
   limit?: number;
 };
@@ -39,8 +44,6 @@ export async function listPublishedStories(
 ): Promise<Story[]> {
   const db = getDb();
   const limit = args.limit ?? 50;
-  // cursor pagination lands in 0007.
-  void args.cursor;
 
   if (args.category) {
     const rows = await db
@@ -65,4 +68,39 @@ export async function listPublishedStories(
     .where(eq(stories.status, "published"))
     .orderBy(desc(stories.publishedAt))
     .limit(limit);
+}
+
+export async function getCategoryIdsBySlug(
+  db: Db | Tx,
+  slugs: readonly string[],
+): Promise<string[]> {
+  if (slugs.length === 0) return [];
+  const rows = await db
+    .select({ id: categories.id, slug: categories.slug })
+    .from(categories)
+    .where(inArray(categories.slug, slugs as string[]));
+  const idBySlug = new Map(rows.map((r) => [r.slug, r.id]));
+  // Preserve caller order; missing slugs throw — zod already enforces the
+  // seeded list, so a miss means the seed migration was rolled back mid-flight.
+  return slugs.map((slug) => {
+    const id = idBySlug.get(slug);
+    if (!id) throw new Error(`category slug not found: ${slug}`);
+    return id;
+  });
+}
+
+// Delete-then-insert reconciliation. The join has no other writers
+// (OpenClaw is single-writer; the ingest loop is sequential) and the
+// caller wraps this in a transaction, so the brief gap is not a
+// visibility hazard.
+export async function setStoryCategories(
+  tx: Db | Tx,
+  storyId: string,
+  categoryIds: readonly string[],
+): Promise<void> {
+  await tx.delete(storyCategories).where(eq(storyCategories.storyId, storyId));
+  if (categoryIds.length === 0) return;
+  await tx.insert(storyCategories).values(
+    categoryIds.map((categoryId) => ({ storyId, categoryId })),
+  );
 }

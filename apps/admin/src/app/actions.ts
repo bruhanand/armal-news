@@ -1,13 +1,12 @@
 "use server";
 
-import { eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { getDb, stories } from "@armal/shared/db";
 import {
-  categories,
-  getDb,
-  stories,
-  storyCategories,
-} from "@armal/shared/db";
+  getCategoryIdsBySlug,
+  setStoryCategories,
+} from "@armal/shared/db/queries";
 import { isCategorySlug } from "@armal/shared/constants/categories";
 
 export async function publishStory(id: string) {
@@ -28,24 +27,9 @@ export async function updateStoryCategories(storyId: string, formData: FormData)
   }
 
   const db = getDb();
-  const targetIds = slugs.length
-    ? (
-        await db
-          .select({ id: categories.id })
-          .from(categories)
-          .where(inArray(categories.slug, slugs))
-      ).map((c) => c.id)
-    : [];
-
   await db.transaction(async (tx) => {
-    await tx
-      .delete(storyCategories)
-      .where(eq(storyCategories.storyId, storyId));
-    if (targetIds.length) {
-      await tx
-        .insert(storyCategories)
-        .values(targetIds.map((cid) => ({ storyId, categoryId: cid })));
-    }
+    const categoryIds = await getCategoryIdsBySlug(tx, slugs);
+    await setStoryCategories(tx, storyId, categoryIds);
   });
 
   revalidatePath("/");
