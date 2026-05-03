@@ -1,3 +1,9 @@
+// Response envelope for batch writes:
+//   { ok: boolean, results: IngestResult[], errors: IngestError[] }
+// Per-item results are required because HTTP status alone can't express partial
+// success — one bad Story shouldn't roll back the others' writes. HTTP status is
+// 200 when every Story succeeded and 400 when any did not. Read-side endpoints
+// use a thinner shape — see apps/web/src/app/api/feed/route.ts.
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb, stories } from "@armal/shared/db";
