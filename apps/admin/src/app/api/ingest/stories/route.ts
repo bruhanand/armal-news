@@ -161,7 +161,7 @@ export async function POST(req: Request) {
             slug,
             title: story.title,
             shortSummary: story.short_summary,
-            bodyMarkdown: story.body_markdown,
+            bodyMarkdown: sanitizedBody,
             imageUrl: cdnUrl,
             sourceLink: story.source_link,
             status: "draft",
