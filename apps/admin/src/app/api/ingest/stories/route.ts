@@ -12,6 +12,7 @@ import {
   setStoryCategories,
 } from "@armal/shared/db/queries";
 import { resolveSlug } from "@armal/shared/lib/slugify";
+import { sanitizeMarkdown } from "@armal/shared/lib/markdown-sanitize";
 import {
   IngestBatch,
   type IngestStoryV1,
@@ -105,6 +106,13 @@ export async function POST(req: Request) {
         return id;
       });
 
+      // Sanitize at write time. The body_markdown column stores sanitized
+      // HTML from this slice forward (the column name is legacy); the
+      // deep-dive renders via dangerouslySetInnerHTML against the stored
+      // string, and the admin Preview tab in slice 0008 reuses the same
+      // util so admin-preview ≡ public-render byte-for-byte (ADR 0004 § E).
+      const sanitizedBody = sanitizeMarkdown(story.body_markdown);
+
       // One transaction per Story: the stories upsert + the join reconciliation
       // commit together, so a join failure rolls back the row write. The image
       // upload to Storage already happened above (Storage is not transactional;
@@ -122,9 +130,10 @@ export async function POST(req: Request) {
             .set({
               title: story.title,
               shortSummary: story.short_summary,
-              bodyMarkdown: story.body_markdown,
+              bodyMarkdown: sanitizedBody,
               imageUrl: cdnUrl,
               sourceLink: story.source_link,
+              tags: story.tags,
             })
             .where(eq(stories.externalId, story.external_id));
 
@@ -152,10 +161,11 @@ export async function POST(req: Request) {
             slug,
             title: story.title,
             shortSummary: story.short_summary,
-            bodyMarkdown: story.body_markdown,
+            bodyMarkdown: sanitizedBody,
             imageUrl: cdnUrl,
             sourceLink: story.source_link,
             status: "draft",
+            tags: story.tags,
           })
           .returning({ id: stories.id, slug: stories.slug });
 

@@ -24,6 +24,7 @@ export const stories = pgTable("stories", {
   imageUrl: text("image_url").notNull(),
   sourceLink: text("source_link").notNull(),
   status: storyStatus("status").notNull().default("draft"),
+  tags: text("tags").array().notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -437,6 +437,91 @@ describe("POST /api/ingest/stories — category persistence", () => {
     expect(uploadMock).not.toHaveBeenCalled();
   });
 
+  it("sanitizes body_markdown at write time (no <script> reaches the DB)", async () => {
+    const batch = {
+      stories: [
+        makeStory({
+          external_id: "ext-xss",
+          title: "XSS attempt",
+          image_url: "https://upstream.example/a.jpg",
+          body_markdown:
+            "Hello <script>alert(1)</script> world.\n\n[click](javascript:alert(1))",
+        }),
+      ],
+    };
+
+    const res = await POST(ingestRequest(batch));
+    expect(res.status).toBe(200);
+
+    const db = getDb();
+    const [row] = await db
+      .select()
+      .from(stories)
+      .where(eq(stories.externalId, "ext-xss"));
+    expect(row).toBeDefined();
+    expect(row!.bodyMarkdown).not.toMatch(/<script\b/i);
+    expect(row!.bodyMarkdown).not.toContain("javascript:");
+    // Stored as sanitized HTML, not raw markdown.
+    expect(row!.bodyMarkdown).toContain("<p>");
+  });
+
+  it("persists the validated tags array on insert", async () => {
+    const batch = {
+      stories: [
+        makeStory({
+          external_id: "ext-tags-insert",
+          title: "Tagged story",
+          image_url: "https://upstream.example/a.jpg",
+          tags: ["llms", "safety"],
+        }),
+      ],
+    };
+
+    const res = await POST(ingestRequest(batch));
+    expect(res.status).toBe(200);
+
+    const db = getDb();
+    const [row] = await db
+      .select()
+      .from(stories)
+      .where(eq(stories.externalId, "ext-tags-insert"));
+    expect(row?.tags).toEqual(["llms", "safety"]);
+  });
+
+  it("reconciles tags on update (replaces, does not merge)", async () => {
+    const first = {
+      stories: [
+        makeStory({
+          external_id: "ext-tags-rec",
+          title: "Tag-reconciling story",
+          image_url: "https://upstream.example/a.jpg",
+          tags: ["llms", "safety"],
+        }),
+      ],
+    };
+    await POST(ingestRequest(first));
+
+    const second = {
+      stories: [
+        makeStory({
+          external_id: "ext-tags-rec",
+          title: "Tag-reconciling story",
+          image_url: "https://upstream.example/a.jpg",
+          tags: ["robotics"],
+        }),
+      ],
+    };
+    const res = await POST(ingestRequest(second));
+    expect(res.status).toBe(200);
+
+    const db = getDb();
+    const [row] = await db
+      .select()
+      .from(stories)
+      .where(eq(stories.externalId, "ext-tags-rec"));
+    expect(row?.tags).toEqual(["robotics"]);
+  });
+
   it("isolates a per-Story bad slug to the failing index in a multi-Story batch", async () => {
     // The whole batch is rejected at zod (slice 0003 contract — even one
     // bad Story rejects the batch), so no rows write. Verify the per-index
