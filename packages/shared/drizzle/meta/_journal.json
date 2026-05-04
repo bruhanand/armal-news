@@ -29,6 +29,13 @@
       "when": 1777759393208,
       "tag": "0003_large_aaron_stack",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1777926530339,
+      "tag": "0004_fixed_mercury",
+      "breakpoints": true
     }
   ]
 }
