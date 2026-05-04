@@ -437,6 +437,34 @@ describe("POST /api/ingest/stories — category persistence", () => {
     expect(uploadMock).not.toHaveBeenCalled();
   });
 
+  it("sanitizes body_markdown at write time (no <script> reaches the DB)", async () => {
+    const batch = {
+      stories: [
+        makeStory({
+          external_id: "ext-xss",
+          title: "XSS attempt",
+          image_url: "https://upstream.example/a.jpg",
+          body_markdown:
+            "Hello <script>alert(1)</script> world.\n\n[click](javascript:alert(1))",
+        }),
+      ],
+    };
+
+    const res = await POST(ingestRequest(batch));
+    expect(res.status).toBe(200);
+
+    const db = getDb();
+    const [row] = await db
+      .select()
+      .from(stories)
+      .where(eq(stories.externalId, "ext-xss"));
+    expect(row).toBeDefined();
+    expect(row!.bodyMarkdown).not.toMatch(/<script\b/i);
+    expect(row!.bodyMarkdown).not.toContain("javascript:");
+    // Stored as sanitized HTML, not raw markdown.
+    expect(row!.bodyMarkdown).toContain("<p>");
+  });
+
   it("persists the validated tags array on insert", async () => {
     const batch = {
       stories: [
