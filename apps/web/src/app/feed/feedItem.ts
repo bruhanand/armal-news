@@ -4,6 +4,12 @@
 // fetches the deep-dive body just to render a card.
 import type { Story } from "@armal/shared/db/schema";
 
+// Single page size for both the SSR page-1 fetch (page.tsx) and subsequent
+// /api/feed pages — keeps the user-visible cadence uniform.
+export const FEED_PAGE_LIMIT = 20;
+// Hard ceiling on what /api/feed will accept via ?limit=.
+export const FEED_PAGE_LIMIT_MAX = 50;
+
 export type FeedItem = {
   id: string;
   slug: string;

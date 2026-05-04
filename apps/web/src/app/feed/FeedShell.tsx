@@ -44,9 +44,23 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
 
   const mobileScrollRef = useRef<HTMLDivElement | null>(null);
   const desktopScrollRef = useRef<HTMLDivElement | null>(null);
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  // One sentinel per surface — both render at every breakpoint, but the
+  // hidden one is `display: none` and never intersects, so a single observer
+  // watching both still fires only on whichever surface is visible.
+  const desktopSentinelRef = useRef<HTMLDivElement | null>(null);
+  const mobileSentinelRef = useRef<HTMLDivElement | null>(null);
   const inFlightRef = useRef(false);
   const desktopAnchorRef = useRef<HTMLButtonElement | null>(null);
+  // Refs that track open state for the keyboard listener so the effect
+  // doesn't tear down + re-add on every menu / modal toggle.
+  const menuOpenRef = useRef(false);
+  const shortcutsOpenRef = useRef(false);
+  useEffect(() => {
+    menuOpenRef.current = menuOpen;
+  }, [menuOpen]);
+  useEffect(() => {
+    shortcutsOpenRef.current = shortcutsOpen;
+  }, [shortcutsOpen]);
 
   const activeCategory = useMemo(
     () => categories.find((c) => c.slug === activeSlug) ?? null,
@@ -62,8 +76,6 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
   // Cursor pagination: IntersectionObserver near the end of the loaded set.
   useEffect(() => {
     if (!nextCursor) return;
-    const node = sentinelRef.current;
-    if (!node) return;
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -94,7 +106,8 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
       },
       { rootMargin: "400px 0px" },
     );
-    observer.observe(node);
+    if (desktopSentinelRef.current) observer.observe(desktopSentinelRef.current);
+    if (mobileSentinelRef.current) observer.observe(mobileSentinelRef.current);
     return () => observer.disconnect();
   }, [nextCursor, activeSlug]);
 
@@ -183,8 +196,8 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
       if (e.altKey) return;
 
       if (e.key === "Escape") {
-        if (shortcutsOpen) setShortcutsOpen(false);
-        else if (menuOpen) setMenuOpen(false);
+        if (shortcutsOpenRef.current) setShortcutsOpen(false);
+        else if (menuOpenRef.current) setMenuOpen(false);
         return;
       }
       if (e.key === "j" || e.key === "J" || e.key === "ArrowDown") {
@@ -219,7 +232,10 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [menuOpen, shortcutsOpen, setFilter]);
+    // setFilter is stable (useCallback over [router, scrollToTop]); menu /
+    // modal open state is read via refs above so the listener can stay
+    // mounted across toggles.
+  }, [setFilter]);
 
   return (
     <>
@@ -326,7 +342,7 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
               ))}
             </div>
             {nextCursor && (
-              <div ref={sentinelRef} className="h-12" aria-hidden />
+              <div ref={desktopSentinelRef} className="h-12" aria-hidden />
             )}
             {loading && (
               <p className="pt-3 text-center font-mono text-[11px] text-muted">
@@ -357,7 +373,7 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
               />
             ))}
             {nextCursor && (
-              <div ref={sentinelRef} className="h-px" aria-hidden />
+              <div ref={mobileSentinelRef} className="h-px" aria-hidden />
             )}
           </>
         )}
@@ -456,10 +472,14 @@ function MobileCard({
 }) {
   return (
     <article className="relative h-[100dvh] w-full snap-start">
+      {/* Tap target covering the full card. aria-hidden + tabIndex={-1} so
+       * screen readers and keyboard users don't land on this anonymous
+       * region — they land on the headline link below instead. */}
       <Link
         href={`/story/${item.slug}`}
         className="absolute inset-0 z-10"
-        aria-label={`Open ${item.title}`}
+        aria-hidden
+        tabIndex={-1}
       />
 
       {/* Image fills the top half. */}
@@ -518,12 +538,20 @@ function MobileCard({
         )}
       </div>
 
-      {/* Headline card straddling the seam. */}
-      <div className="relative z-10 h-0">
+      {/* Headline card straddling the seam — focusable Link inside so the
+       * card is reachable by keyboard / screen reader. The anchor has
+       * pointer-events-auto so a tap on the headline reads as a normal click
+       * rather than passing through to the overlay link below. */}
+      <div className="relative z-20 h-0">
         <div className="absolute inset-x-4 -top-px -translate-y-1/2 rounded-card border border-border bg-surface px-6 py-5 shadow-drop">
-          <h3 className="m-0 font-display text-[24px] font-semibold leading-[1.18] tracking-[-0.005em] text-fg [text-wrap:balance]">
-            {item.title}
-          </h3>
+          <Link
+            href={`/story/${item.slug}`}
+            className="pointer-events-auto block focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <h3 className="m-0 font-display text-[24px] font-semibold leading-[1.18] tracking-[-0.005em] text-fg [text-wrap:balance]">
+              {item.title}
+            </h3>
+          </Link>
         </div>
       </div>
 

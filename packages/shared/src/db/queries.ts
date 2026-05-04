@@ -47,7 +47,8 @@ export type ListPublishedStoriesResult = {
 // tuple is the order key — same id tiebreaker keeps pages stable when two
 // stories share a published_at timestamp.
 const CURSOR_SEPARATOR = "__";
-const UUID_RE = /^[0-9a-f-]{36}$/i;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type ParsedCursor = { publishedAt: Date; id: string };
 
@@ -126,14 +127,16 @@ export async function listPublishedStories(
 
 // Map of storyId → the lowest-sortOrder Category that the Story belongs to.
 // Used by the feed to render the per-card eyebrow (desktop) and the
-// per-card category icon (mobile, unfiltered chrome). Single round-trip.
+// per-card category icon (mobile, unfiltered chrome). DISTINCT ON
+// (story_id) returns one row per Story directly from Postgres — the
+// secondary ORDER BY sortOrder picks the deterministic winner.
 export async function primaryCategoryByStoryIds(
   storyIds: readonly string[],
 ): Promise<Map<string, { slug: string; name: string; sortOrder: number }>> {
   if (storyIds.length === 0) return new Map();
   const db = getDb();
   const rows = await db
-    .select({
+    .selectDistinctOn([storyCategories.storyId], {
       storyId: storyCategories.storyId,
       slug: categories.slug,
       name: categories.name,
@@ -141,16 +144,15 @@ export async function primaryCategoryByStoryIds(
     })
     .from(storyCategories)
     .innerJoin(categories, eq(categories.id, storyCategories.categoryId))
-    .where(inArray(storyCategories.storyId, storyIds as string[]));
+    .where(inArray(storyCategories.storyId, storyIds as string[]))
+    .orderBy(asc(storyCategories.storyId), asc(categories.sortOrder));
 
-  const out = new Map<string, { slug: string; name: string; sortOrder: number }>();
-  for (const r of rows) {
-    const existing = out.get(r.storyId);
-    if (!existing || r.sortOrder < existing.sortOrder) {
-      out.set(r.storyId, { slug: r.slug, name: r.name, sortOrder: r.sortOrder });
-    }
-  }
-  return out;
+  return new Map(
+    rows.map((r) => [
+      r.storyId,
+      { slug: r.slug, name: r.name, sortOrder: r.sortOrder },
+    ]),
+  );
 }
 
 export async function getCategoryIdsBySlug(

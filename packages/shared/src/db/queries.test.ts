@@ -285,6 +285,16 @@ describe("parseCursor / encodeCursor", () => {
     expect(parseCursor("2026-01-01T00:00:00Z__not-a-uuid")).toBeNull();
   });
 
+  it("rejects ill-grouped uuid-shaped strings (length-only check is not enough)", () => {
+    // 36 chars and only [0-9a-f-] but not in canonical 8-4-4-4-12 grouping.
+    expect(
+      parseCursor("2026-01-01T00:00:00Z__------------------------------------"),
+    ).toBeNull();
+    expect(
+      parseCursor("2026-01-01T00:00:00Z__1111111111111111111111111111111111aa"),
+    ).toBeNull();
+  });
+
   it("returns null on bad date", () => {
     expect(
       parseCursor("not-a-date__11111111-1111-1111-1111-111111111111"),

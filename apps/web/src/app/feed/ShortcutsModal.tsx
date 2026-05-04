@@ -57,7 +57,7 @@ export function ShortcutsModal({ onClose }: { onClose: () => void }) {
               <span className="font-medium text-fg">{row.label}</span>
               <span className="inline-flex items-center gap-[3px]">
                 {row.keys.map((k, j) => (
-                  <span key={j} className="inline-flex items-center gap-[3px]">
+                  <span key={k} className="inline-flex items-center gap-[3px]">
                     {j > 0 && row.keys[j - 1] !== "⌥" && (
                       <span className="px-1 text-[11px] text-muted">or</span>
                     )}

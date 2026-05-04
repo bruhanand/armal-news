@@ -10,12 +10,13 @@ import {
   primaryCategoryByStoryIds,
 } from "@armal/shared/db/queries";
 import { isCategorySlug } from "@armal/shared/constants/categories";
-import { toFeedItem } from "@/app/feed/feedItem";
+import {
+  FEED_PAGE_LIMIT,
+  FEED_PAGE_LIMIT_MAX,
+  toFeedItem,
+} from "@/app/feed/feedItem";
 
 export const dynamic = "force-dynamic";
-
-const DEFAULT_LIMIT = 20;
-const MAX_LIMIT = 50;
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -37,18 +38,24 @@ export async function GET(req: Request) {
     );
   }
 
-  let limit = DEFAULT_LIMIT;
+  let limit = FEED_PAGE_LIMIT;
   if (limitRaw !== null) {
     const parsed = Number.parseInt(limitRaw, 10);
-    if (!Number.isFinite(parsed) || parsed < 1 || parsed > MAX_LIMIT) {
+    if (
+      !Number.isFinite(parsed) ||
+      parsed < 1 ||
+      parsed > FEED_PAGE_LIMIT_MAX
+    ) {
       return NextResponse.json(
-        { error: `limit must be an integer in [1, ${MAX_LIMIT}]` },
+        { error: `limit must be an integer in [1, ${FEED_PAGE_LIMIT_MAX}]` },
         { status: 400 },
       );
     }
     limit = parsed;
   }
 
+  // Sequential — primaryCategoryByStoryIds depends on the ids returned by
+  // listPublishedStories; can't parallelise.
   const { items: stories, nextCursor } = await listPublishedStories({
     category,
     cursor,
