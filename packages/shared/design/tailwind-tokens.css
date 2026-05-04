@@ -1,0 +1,33 @@
+/* Tailwind v4 @theme inline mapping for the design tokens.
+ *
+ * Pre-mapped Tailwind keys per the slice 0005 brief:
+ *   bg-bg, bg-surface, text-fg, text-muted, text-accent, border-border,
+ *   font-display, font-body, font-mono,
+ *   rounded-card, rounded-sheet, rounded-full,
+ *   shadow-card, shadow-sheet, shadow-drop.
+ *
+ * `inline` keeps the Tailwind utilities pointing at `var(--bg)` etc., so
+ * `prefers-color-scheme` and the manual `.theme-{light,dark}` overrides on
+ * tokens.css cascade correctly without re-emitting the dark-mode utilities.
+ */
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-backdrop: var(--backdrop);
+
+  --font-display: var(--display);
+  --font-body: var(--body);
+  --font-mono: var(--mono);
+
+  --radius-card: var(--r-card);
+  --radius-sheet: var(--r-sheet);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-sheet: var(--shadow-sheet);
+  --shadow-drop: var(--shadow-drop);
+}

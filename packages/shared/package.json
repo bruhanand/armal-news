@@ -12,7 +12,10 @@
     "./lib/slugify": "./src/lib/slugify.ts",
     "./lib/markdown-sanitize": "./src/lib/markdown-sanitize/index.ts",
     "./validation/story": "./src/validation/story.ts",
-    "./constants/categories": "./src/constants/categories.ts"
+    "./constants/categories": "./src/constants/categories.ts",
+    "./design/tokens": "./design/tokens.ts",
+    "./design/tokens.css": "./design/tokens.css",
+    "./design/tailwind-tokens.css": "./design/tailwind-tokens.css"
   },
   "scripts": {
     "db:generate": "drizzle-kit generate",
