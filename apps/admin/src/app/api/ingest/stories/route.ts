@@ -125,6 +125,7 @@ export async function POST(req: Request) {
               bodyMarkdown: story.body_markdown,
               imageUrl: cdnUrl,
               sourceLink: story.source_link,
+              tags: story.tags,
             })
             .where(eq(stories.externalId, story.external_id));
 
@@ -156,6 +157,7 @@ export async function POST(req: Request) {
             imageUrl: cdnUrl,
             sourceLink: story.source_link,
             status: "draft",
+            tags: story.tags,
           })
           .returning({ id: stories.id, slug: stories.slug });
 
