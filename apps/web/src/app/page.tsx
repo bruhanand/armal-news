@@ -1,6 +1,11 @@
-import { listCategories, listPublishedStories } from "@armal/shared/db/queries";
+import {
+  listCategories,
+  listPublishedStories,
+  primaryCategoryByStoryIds,
+} from "@armal/shared/db/queries";
 import { isCategorySlug } from "@armal/shared/constants/categories";
-import { CategoryControls } from "./CategoryControls";
+import { FeedShell } from "./feed/FeedShell";
+import { toFeedItem } from "./feed/feedItem";
 
 export const dynamic = "force-dynamic";
 
@@ -16,50 +21,20 @@ export default async function HomePage({
   const activeSlug =
     requested && isCategorySlug(requested) ? requested : null;
 
-  const [allCategories, published] = await Promise.all([
+  const [allCategories, page1] = await Promise.all([
     listCategories(),
     listPublishedStories({ category: activeSlug ?? undefined }),
   ]);
+  const primary = await primaryCategoryByStoryIds(page1.items.map((s) => s.id));
+  const items = page1.items.map((s) => toFeedItem(s, primary.get(s.id)));
 
   return (
-    <main>
-      <CategoryControls
+    <main className="min-h-screen bg-bg text-fg">
+      <FeedShell
+        initial={{ items, nextCursor: page1.nextCursor }}
         categories={allCategories.map((c) => ({ slug: c.slug, name: c.name }))}
         activeSlug={activeSlug}
       />
-
-      {published.length === 0 ? (
-        <p>No published stories yet.</p>
-      ) : (
-        published.map((story) => (
-          <article
-            key={story.id}
-            style={{
-              border: "1px solid #ccc",
-              borderRadius: "8px",
-              padding: "24px",
-              marginBottom: "24px",
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={story.imageUrl}
-              alt=""
-              style={{
-                width: "100%",
-                aspectRatio: "16 / 9",
-                objectFit: "cover",
-                marginBottom: "16px",
-              }}
-            />
-            <h1 style={{ marginTop: 0 }}>{story.title}</h1>
-            <p style={{ fontStyle: "italic", color: "#444" }}>
-              {story.shortSummary}
-            </p>
-            <a href={`/story/${story.slug}`}>Read deep dive →</a>
-          </article>
-        ))
-      )}
     </main>
   );
 }
