@@ -1,0 +1,29 @@
+/* Order matters: tokens.css declares the CSS vars; Tailwind core is imported
+ * next; the @theme inline block in tailwind-tokens.css then maps Tailwind
+ * utility keys to those vars so `bg-bg`, `text-fg`, `font-display` etc.
+ * resolve correctly.
+ */
+@import "@armal/shared/design/tokens.css";
+@import "tailwindcss";
+@import "@armal/shared/design/tailwind-tokens.css";
+
+/* Font families come from next/font/google (see layout.tsx); the variables
+ * are attached to <html>. Override the shared tokens so the Tailwind
+ * `font-display`, `font-body`, `font-mono` utilities pick up the
+ * Next-injected webfonts with the design-pack fallbacks behind them.
+ */
+:root {
+  --display: var(--font-newsreader), "Newsreader", Georgia, serif;
+  --body: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont,
+    system-ui, sans-serif;
+  --mono: var(--font-jetbrains), "JetBrains Mono", ui-monospace, Menlo,
+    monospace;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--body);
+  -webkit-font-smoothing: antialiased;
+}
