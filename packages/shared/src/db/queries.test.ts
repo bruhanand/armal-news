@@ -5,7 +5,11 @@ import {
   stories,
   storyCategories,
 } from "./index";
-import { listCategories, listPublishedStories } from "./queries";
+import {
+  getPublishedStoryBySlug,
+  listCategories,
+  listPublishedStories,
+} from "./queries";
 
 const haveDb = Boolean(process.env.DATABASE_URL);
 const itDb = haveDb ? it : it.skip;
@@ -25,7 +29,7 @@ async function categoryIdMap(): Promise<Map<string, string>> {
 async function makeStory(opts: {
   externalId: string;
   title: string;
-  status: "draft" | "published";
+  status: "draft" | "published" | "rejected";
   publishedAt?: Date;
   categorySlugs?: string[];
 }) {
@@ -164,6 +168,17 @@ describe("listPublishedStories", () => {
     expect(rows.map((r) => r.externalId)).toEqual(["new", "mid", "old"]);
   });
 
+  itDb("returns tags as an empty array when none were ingested", async () => {
+    await makeStory({
+      externalId: "no-tags",
+      title: "No tags",
+      status: "published",
+      publishedAt: new Date("2026-01-01"),
+    });
+    const [row] = await listPublishedStories();
+    expect(row?.tags).toEqual([]);
+  });
+
   itDb("respects limit", async () => {
     for (let i = 0; i < 5; i++) {
       await makeStory({
@@ -175,5 +190,40 @@ describe("listPublishedStories", () => {
     }
     const rows = await listPublishedStories({ limit: 2 });
     expect(rows).toHaveLength(2);
+  });
+});
+
+describe("getPublishedStoryBySlug", () => {
+  itDb("returns the row for a published story", async () => {
+    await makeStory({
+      externalId: "pub-only",
+      title: "Pub only",
+      status: "published",
+      publishedAt: new Date("2026-01-01"),
+    });
+    const row = await getPublishedStoryBySlug("pub-only");
+    expect(row?.externalId).toBe("pub-only");
+  });
+
+  itDb("returns null for a draft row", async () => {
+    await makeStory({
+      externalId: "draft-only",
+      title: "Draft only",
+      status: "draft",
+    });
+    expect(await getPublishedStoryBySlug("draft-only")).toBeNull();
+  });
+
+  itDb("returns null for a rejected row", async () => {
+    await makeStory({
+      externalId: "rejected-only",
+      title: "Rejected only",
+      status: "rejected",
+    });
+    expect(await getPublishedStoryBySlug("rejected-only")).toBeNull();
+  });
+
+  itDb("returns null when the slug does not exist", async () => {
+    expect(await getPublishedStoryBySlug("does-not-exist")).toBeNull();
   });
 });
