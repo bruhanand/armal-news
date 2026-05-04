@@ -1,0 +1,357 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Armal News — Native Mobile Feed · Spec v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --display: 'Newsreader', Georgia, serif;
+    --body: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    --r-card: 12px;
+    --r-sheet: 16px;
+    --r-pill: 999px;
+    --page-bg: #EBE5DA;
+    --page-fg: #3D3929;
+    --page-muted: #6B5F4D;
+    --page-border: #E0D8C7;
+    --page-accent: #CC785C;
+  }
+  .theme-light {
+    --bg: #F5F0E8; --surface: #EFEAE0; --fg: #3D3929; --muted: #6B5F4D;
+    --accent: #CC785C; --border: #E0D8C7; --scrim: rgba(0,0,0,0.32);
+    --backdrop: rgba(20,16,8,0.42);
+    --shadow-card: 0 10px 28px -16px rgba(40,30,15,0.30), 0 1px 0 rgba(40,30,15,0.04);
+    --shadow-sheet: 0 -16px 40px -20px rgba(20,16,8,0.45);
+  }
+  .theme-dark {
+    --bg: #262624; --surface: #1E1E1C; --fg: #E8E1D4; --muted: #A89E8B;
+    --accent: #DA7756; --border: #3A3733; --scrim: rgba(0,0,0,0.42);
+    --backdrop: rgba(0,0,0,0.55);
+    --shadow-card: 0 10px 28px -16px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.18);
+    --shadow-sheet: 0 -16px 40px -20px rgba(0,0,0,0.7);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { background: var(--page-bg); color: var(--page-fg); font-family: var(--body); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  .page { max-width: 1760px; margin: 0 auto; padding: 64px 48px 96px; }
+  .topbar { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 40px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--page-muted); }
+  .topbar a { color: var(--page-muted); text-decoration: none; }
+  .topbar a:hover { color: var(--page-accent); }
+  header.masthead { border-bottom: 1px solid var(--page-border); padding-bottom: 36px; margin-bottom: 56px; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 32px; }
+  .masthead-left .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--page-muted); margin-bottom: 10px; }
+  .masthead-left h1 { font-family: var(--display); font-weight: 500; font-size: 48px; line-height: 1.05; letter-spacing: -0.012em; margin: 0; }
+  .masthead-left h1 em { font-style: italic; color: var(--page-accent); }
+  .masthead-left p { margin: 18px 0 0; color: var(--page-muted); font-size: 15px; max-width: 560px; line-height: 1.6; }
+  .legend { display: grid; grid-template-columns: repeat(2, auto); gap: 8px 18px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--page-muted); border-left: 1px solid var(--page-border); padding-left: 32px; }
+  .legend .swatch { display: inline-block; width: 10px; height: 10px; margin-right: 8px; vertical-align: -1px; border-radius: 2px; border: 1px solid var(--page-border); }
+  section.surface { margin-bottom: 88px; }
+  section.surface > header { display: grid; grid-template-columns: auto 1fr auto; gap: 16px 24px; align-items: baseline; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px dashed var(--page-border); }
+  section.surface > header .num { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--page-accent); }
+  section.surface > header h2 { font-family: var(--display); font-weight: 500; font-size: 30px; letter-spacing: -0.01em; margin: 0; color: var(--page-fg); }
+  section.surface > header .desc { grid-column: 1 / -1; color: var(--page-muted); font-size: 14px; max-width: 680px; line-height: 1.55; margin: 0; }
+  section.surface > header .meta { font-family: var(--mono); font-size: 11px; color: var(--page-muted); letter-spacing: 0.08em; }
+  .device-row-wrap { overflow-x: auto; margin: 0 -48px; padding: 4px 48px 18px; scrollbar-width: thin; }
+  .device-row { display: flex; gap: 28px; width: max-content; }
+  figure.frame { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+  figure.frame > figcaption { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--page-muted); display: flex; justify-content: space-between; align-items: baseline; }
+  figure.frame > figcaption .dim { opacity: 0.6; }
+  .device { position: relative; overflow: hidden; background: var(--bg); color: var(--fg); font-family: var(--body); border: 1px solid var(--border); box-shadow: 0 12px 30px -22px rgba(0,0,0,0.35); flex-shrink: 0; width: 375px; height: 812px; border-radius: 12px; }
+  .statusbar { position: absolute; top: 0; left: 0; right: 0; z-index: 80; display: flex; align-items: center; justify-content: space-between; color: var(--fg); font-feature-settings: 'tnum'; pointer-events: none; }
+  .statusbar.ios { height: 47px; padding: 18px 28px 0; font-weight: 600; font-size: 15px; letter-spacing: -0.01em; }
+  .statusbar.contrast-light { color: #FBF7EF; }
+  .statusbar .icons { display: inline-flex; align-items: center; gap: 6px; }
+  .home-indicator { position: absolute; bottom: 0; left: 0; right: 0; z-index: 80; display: flex; align-items: flex-end; justify-content: center; pointer-events: none; }
+  .home-indicator.ios { height: 34px; padding-bottom: 8px; }
+  .home-indicator.ios::after { content: ''; width: 134px; height: 5px; border-radius: 999px; background: var(--fg); opacity: 0.85; }
+  .sb-ico { display: inline-block; width: 18px; height: 11px; vertical-align: middle; }
+  .sb-ico path, .sb-ico rect { fill: currentColor; }
+  .screen { position: absolute; inset: 0; }
+  .feed-card { position: absolute; inset: 0; display: flex; flex-direction: column; }
+  .feed-card .card-image { height: 50%; position: relative; background-color: #2B3960; overflow: hidden; }
+  .feed-card .card-image::after { content: ''; position: absolute; inset: 0 0 auto 0; height: 130px; background: linear-gradient(180deg, rgba(0,0,0,0.32) 0%, rgba(0,0,0,0) 100%); pointer-events: none; }
+  .feed-card .overlay-top { position: absolute; top: 0; left: 0; right: 0; padding: 60px 18px 0; z-index: 30; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; color: #FBF7EF; }
+  .feed-card .overlay-top .cat-icon { opacity: 0.55; display: inline-flex; color: #fff; }
+  .feed-card .overlay-top .cat-icon svg { width: 24px; height: 24px; }
+  .feed-card .overlay-top .wm { font-family: var(--display); font-style: italic; font-weight: 500; font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.62; text-align: center; }
+  .feed-card .overlay-top.has-filter { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 54px 18px 0; }
+  .feed-card .overlay-top.has-filter .wm { font-size: 17px; letter-spacing: 0.08em; opacity: 0.90; }
+  .feed-card .headline-anchor { position: relative; height: 0; z-index: 25; }
+  .feed-card .headline { position: absolute; top: 0; left: 18px; right: 18px; transform: translateY(-50%); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); padding: 22px 24px; box-shadow: var(--shadow-card); }
+  .feed-card .headline h3 { font-family: var(--display); font-weight: 600; font-size: 24px; line-height: 1.18; letter-spacing: -0.005em; margin: 0; color: var(--fg); text-wrap: balance; }
+  .feed-card .summary-panel { flex: 1; background: var(--bg); display: flex; flex-direction: column; justify-content: center; padding: 60px 28px 56px; position: relative; }
+  .feed-card .summary { font-family: var(--display); font-style: italic; font-weight: 400; font-size: 17px; line-height: 1.45; text-align: center; color: var(--fg); margin: 0; text-wrap: pretty; }
+  .feed-card .tap-cta { position: absolute; bottom: 40px; right: 24px; font-size: 13px; color: var(--muted); letter-spacing: 0.01em; font-weight: 500; }
+  .img-research { background: radial-gradient(ellipse 80% 60% at 25% 20%, rgba(255,255,255,0.20), transparent 60%), radial-gradient(ellipse 60% 60% at 80% 95%, rgba(0,0,0,0.45), transparent 60%), linear-gradient(135deg, #1B2547 0%, #2E3D6E 60%, #4A5C9C 100%); }
+  .img-tools { background: radial-gradient(ellipse 70% 50% at 30% 25%, rgba(255,220,200,0.30), transparent 60%), radial-gradient(ellipse 60% 60% at 80% 90%, rgba(0,0,0,0.40), transparent 60%), linear-gradient(135deg, #4A2A56 0%, #7C3F6C 55%, #C36A60 100%); }
+  .img-cooking { background: radial-gradient(ellipse 70% 60% at 30% 25%, rgba(255,232,180,0.30), transparent 60%), radial-gradient(ellipse 60% 60% at 80% 95%, rgba(0,0,0,0.40), transparent 60%), linear-gradient(135deg, #3A1F12 0%, #6E3E22 50%, #B8753F 100%); }
+  .filter-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 5px 5px 11px; background: rgba(252,246,235,0.94); color: #2F2A1F; border-radius: var(--r-pill); font-family: var(--body); font-weight: 500; font-size: 12px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 4px 12px -6px rgba(0,0,0,0.35); white-space: nowrap; line-height: 1; }
+  .filter-pill .ic { width: 13px; height: 13px; opacity: 0.65; display: inline-block; }
+  .filter-pill .x { width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,0.10); display: inline-flex; align-items: center; justify-content: center; }
+  .filter-pill .x svg { width: 10px; height: 10px; stroke: #2F2A1F; stroke-width: 2.2; }
+  .sheet-backdrop { position: absolute; inset: 0; background: var(--backdrop); z-index: 60; }
+  .sheet { position: absolute; bottom: 0; left: 0; right: 0; z-index: 70; background: var(--surface); border-top-left-radius: var(--r-sheet); border-top-right-radius: var(--r-sheet); box-shadow: var(--shadow-sheet); border: 1px solid var(--border); border-bottom: none; height: 70%; display: flex; flex-direction: column; overflow: hidden; }
+  .sheet .handle { display: flex; justify-content: center; padding: 8px 0 4px; }
+  .sheet .handle::after { content: ''; width: 36px; height: 4px; border-radius: 999px; background: var(--muted); opacity: 0.45; }
+  .sheet .sheet-title { text-align: center; font-family: var(--display); font-weight: 500; font-size: 18px; color: var(--fg); padding: 12px 0 6px; letter-spacing: -0.005em; }
+  .sheet .rows { flex: 1; overflow-y: auto; padding: 8px 0 24px; }
+  .sheet .row { display: flex; align-items: center; gap: 16px; height: 56px; padding: 0 24px; color: var(--fg); }
+  .sheet .row + .row { border-top: 1px solid var(--border); }
+  .sheet .row .ic { width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); }
+  .sheet .row .ic svg { width: 22px; height: 22px; }
+  .sheet .row .name { flex: 1; font-family: var(--body); font-weight: 500; font-size: 16px; color: var(--fg); }
+  .sheet .row.active .ic, .sheet .row.active .name { color: var(--accent); }
+  .sheet .row .check { width: 20px; height: 20px; color: var(--accent); opacity: 0; }
+  .sheet .row.active .check { opacity: 1; }
+  .sheet .row .check svg { width: 18px; height: 18px; stroke-width: 2.4; }
+  .deepdive { position: absolute; inset: 0; overflow: hidden; display: flex; flex-direction: column; }
+  .deepdive .hero-image { height: 38%; position: relative; background-color: #2B3960; }
+  .deepdive .hero-image::after { content: ''; position: absolute; inset: 0 0 auto 0; height: 130px; background: linear-gradient(180deg, rgba(0,0,0,0.36) 0%, rgba(0,0,0,0) 100%); }
+  .deepdive .back-btn { position: absolute; top: 56px; left: 16px; z-index: 40; width: 36px; height: 36px; border-radius: 50%; background: rgba(20,16,8,0.42); backdrop-filter: blur(12px); display: inline-flex; align-items: center; justify-content: center; color: #FBF7EF; }
+  .deepdive .back-btn svg { width: 18px; height: 18px; }
+  .deepdive .article { flex: 1; overflow: hidden; background: var(--bg); padding: 28px 24px 56px; }
+  .deepdive .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .deepdive h1 { font-family: var(--display); font-weight: 600; font-size: 26px; line-height: 1.18; letter-spacing: -0.005em; color: var(--fg); margin: 0 0 14px; text-wrap: balance; }
+  .deepdive .summary { font-family: var(--display); font-style: italic; font-weight: 400; font-size: 17px; line-height: 1.5; color: var(--muted); margin: 0 0 20px; text-wrap: pretty; }
+  .deepdive .body { font-family: var(--body); font-size: 15px; line-height: 1.65; color: var(--fg); }
+  .deepdive .body p { margin: 0 0 14px; }
+  .deepdive .body .feat { font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 500; }
+  .deepdive .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 22px; }
+  .deepdive .chip { font-family: var(--mono); font-size: 11px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); padding: 5px 9px; border-radius: 6px; }
+  .deepdive .source-cta { display: inline-flex; align-items: center; gap: 6px; margin-top: 22px; padding: 12px 16px; background: var(--accent); color: #FBF7EF; border-radius: 999px; font-family: var(--body); font-weight: 600; font-size: 13px; text-decoration: none; }
+  .deepdive .source-cta svg { width: 14px; height: 14px; }
+  .deepdive .source-host { display: block; margin-top: 10px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .deepdive .pull { border-left: 2px solid var(--accent); padding: 4px 0 4px 14px; margin: 18px 0; font-family: var(--display); font-style: italic; font-size: 17px; line-height: 1.4; color: var(--fg); }
+  .onboarding { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 47px 32px 34px; background: var(--bg); }
+  .onboarding .ob-mark { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 24px; text-align: center; }
+  .onboarding .ob-mark .icon-mark { width: 100px; height: 100px; border-radius: 22.37%; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: var(--display); font-style: italic; font-weight: 600; font-size: 64px; color: var(--accent); box-shadow: var(--shadow-card); }
+  .onboarding .ob-mark .wm { font-family: var(--display); font-style: italic; font-weight: 500; font-size: 40px; letter-spacing: -0.005em; color: var(--fg); }
+  .onboarding .ob-mark .lede { font-family: var(--display); font-weight: 400; font-size: 19px; line-height: 1.45; color: var(--muted); max-width: 280px; text-wrap: pretty; margin: -8px 0 0; }
+  .onboarding .ob-foot { padding-bottom: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .onboarding .btn { display: flex; align-items: center; justify-content: center; height: 52px; border-radius: 999px; background: var(--accent); color: #FBF7EF; font-family: var(--body); font-weight: 600; font-size: 16px; }
+  .onboarding .terms { text-align: center; font-size: 12px; color: var(--muted); line-height: 1.45; }
+  .icons-row { display: flex; gap: 32px; flex-wrap: wrap; }
+  .icon-plate { margin: 0; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+  .icon-plate figcaption { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--page-muted); }
+  .app-icon { width: 220px; height: 220px; background: var(--bg); color: var(--accent); display: flex; align-items: center; justify-content: center; font-family: var(--display); font-style: italic; font-weight: 600; font-size: 156px; line-height: 1; border: 1px solid var(--border); box-shadow: 0 14px 32px -18px rgba(0,0,0,0.35); overflow: hidden; position: relative; border-radius: 22.37%; }
+  .app-icon::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 30%, rgba(255,255,255,0.10), transparent 60%), radial-gradient(ellipse at 70% 80%, rgba(0,0,0,0.06), transparent 60%); pointer-events: none; }
+  .splash { position: absolute; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; }
+  .splash .wm { font-family: var(--display); font-style: italic; font-weight: 500; font-size: 44px; letter-spacing: -0.005em; color: var(--fg); text-align: center; }
+  .splash .wm small { display: block; margin-top: 10px; font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+  footer.foot { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--page-border); display: flex; justify-content: space-between; color: var(--page-muted); font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; }
+  .device-row-wrap::-webkit-scrollbar { height: 6px; }
+  .device-row-wrap::-webkit-scrollbar-thumb { background: rgba(60,40,20,0.18); border-radius: 6px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></symbol>
+  <symbol id="i-trending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></symbol>
+  <symbol id="i-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/></symbol>
+  <symbol id="i-bot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></symbol>
+  <symbol id="i-utensils" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7a3 3 0 0 0 3 3v10M9 2v7M6 2v7M14 2c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h1v10h2V2h-3z"/></symbol>
+  <symbol id="i-graduation" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21.42 10.92a1 1 0 0 0-.02-1.84L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.83l8.57 3.91a2 2 0 0 0 1.66 0z"/><path d="M22 10v6M6 12.5V16c0 1.66 2.69 3 6 3s6-1.34 6-3v-3.5"/></symbol>
+  <symbol id="i-microscope" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8M3 22h18M14 22a7 7 0 1 0 0-14h-1M9 14h2M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2ZM12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/></symbol>
+  <symbol id="i-wrench" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-chev-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-arrow-up-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M7 7h10v10"/></symbol>
+</defs></svg>
+
+<main class="page">
+  <div class="topbar">
+    <a href="armal-news-design-index.html">← Back to surface index</a>
+    <span>01 / Native Mobile · v0.2 · React Native</span>
+  </div>
+  <header class="masthead">
+    <div class="masthead-left">
+      <div class="eyebrow">Surface 01 · Native Mobile</div>
+      <h1>Armal News — <em>mobile feed</em>, end to end</h1>
+      <p>React Native app — no iOS/Android UI differentiation. Light and dark for every screen. 375×812 viewport throughout. Share sheet is OS-rendered via expo-sharing — no custom Armal UI needed.</p>
+    </div>
+    <div class="legend">
+      <span><span class="swatch" style="background:#F5F0E8"></span>Light</span>
+      <span><span class="swatch" style="background:#262624"></span>Dark</span>
+    </div>
+  </header>
+
+  <!-- 01 FEED HOME -->
+  <section class="surface" id="feed-home">
+    <header><span class="num">01</span><h2>Feed home</h2><span class="meta">Default landing · vertical snap</span><p class="desc">One full-screen card per swipe. Image covers top half, headline card straddles the image/surface boundary, summary sits centered in the lower half. Category icon top-left, wordmark top-center. "Tap to read →" bottom-right.</p></header>
+    <div class="device-row-wrap"><div class="device-row">
+      <figure class="frame"><figcaption>Light <span class="dim">375 × 812</span></figcaption>
+        <div class="device theme-light">
+          <div class="statusbar ios contrast-light"><span>9:41</span><span class="icons"><svg class="sb-ico" viewBox="0 0 18 11"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg><svg class="sb-ico" viewBox="0 0 18 12"><path d="M9 11.5a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm-3.5-3.6a4.95 4.95 0 0 1 7 0l-1.06 1.06a3.45 3.45 0 0 0-4.88 0L5.5 7.9Zm-2.5-2.5a8.49 8.49 0 0 1 12 0l-1.06 1.06a6.99 6.99 0 0 0-9.88 0L3 5.4ZM.46 2.86a12.04 12.04 0 0 1 17.08 0L16.48 3.92a10.54 10.54 0 0 0-14.96 0L.46 2.86Z"/></svg><svg class="sb-ico" viewBox="0 0 26 12" style="width:24px;height:11px"><rect x="1" y="2" width="20" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/><rect x="3" y="4" width="14" height="4" rx=".8"/><rect x="22" y="4.5" width="2" height="3" rx=".5" opacity=".55"/></svg></span></div>
+          <div class="screen"><div class="feed-card"><div class="card-image img-research"><div class="overlay-top"><span class="cat-icon"><svg><use href="#i-microscope"/></svg></span><span class="wm">Armal News</span><span></span></div></div><div class="headline-anchor"><div class="headline"><h3>Anthropic open-sources interpretability tools for tracing model internals</h3></div></div><div class="summary-panel"><p class="summary">&ldquo;A new toolkit lets researchers see which features fire inside Claude when it answers a prompt — and edit them.&rdquo;</p><div class="tap-cta">Tap to read →</div></div></div></div>
+          <div class="home-indicator ios"></div>
+        </div>
+      </figure>
+      <figure class="frame"><figcaption>Dark <span class="dim">375 × 812</span></figcaption>
+        <div class="device theme-dark">
+          <div class="statusbar ios contrast-light"><span>9:41</span><span class="icons"><svg class="sb-ico" viewBox="0 0 18 11"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg><svg class="sb-ico" viewBox="0 0 18 12"><path d="M9 11.5a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm-3.5-3.6a4.95 4.95 0 0 1 7 0l-1.06 1.06a3.45 3.45 0 0 0-4.88 0L5.5 7.9Zm-2.5-2.5a8.49 8.49 0 0 1 12 0l-1.06 1.06a6.99 6.99 0 0 0-9.88 0L3 5.4ZM.46 2.86a12.04 12.04 0 0 1 17.08 0L16.48 3.92a10.54 10.54 0 0 0-14.96 0L.46 2.86Z"/></svg><svg class="sb-ico" viewBox="0 0 26 12" style="width:24px;height:11px"><rect x="1" y="2" width="20" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/><rect x="3" y="4" width="14" height="4" rx=".8"/><rect x="22" y="4.5" width="2" height="3" rx=".5" opacity=".55"/></svg></span></div>
+          <div class="screen"><div class="feed-card"><div class="card-image img-research"><div class="overlay-top"><span class="cat-icon"><svg><use href="#i-microscope"/></svg></span><span class="wm">Armal News</span><span></span></div></div><div class="headline-anchor"><div class="headline"><h3>Anthropic open-sources interpretability tools for tracing model internals</h3></div></div><div class="summary-panel"><p class="summary">&ldquo;A new toolkit lets researchers see which features fire inside Claude when it answers a prompt — and edit them.&rdquo;</p><div class="tap-cta">Tap to read →</div></div></div></div>
+          <div class="home-indicator ios"></div>
+        </div>
+      </figure>
+    </div></div>
+  </section>
+
+  <!-- 02 ACTIVE CATEGORY FILTER -->
+  <section class="surface" id="feed-filtered">
+    <header><span class="num">02</span><h2>Feed — active category filter</h2><span class="meta">Pill dismiss · 44×44 hit target</span><p class="desc">When a category is active: wordmark anchors the top of the image, filter pill sits directly below it — both centered, always readable against the image scrim. Tap ✕ to clear and return to all stories.</p></header>
+    <div class="device-row-wrap"><div class="device-row">
+      <figure class="frame"><figcaption>Light <span class="dim">375 × 812</span></figcaption>
+        <div class="device theme-light">
+          <div class="statusbar ios contrast-light"><span>9:41</span><span class="icons"><svg class="sb-ico" viewBox="0 0 18 11"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg><svg class="sb-ico" viewBox="0 0 18 12"><path d="M9 11.5a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm-3.5-3.6a4.95 4.95 0 0 1 7 0l-1.06 1.06a3.45 3.45 0 0 0-4.88 0L5.5 7.9Zm-2.5-2.5a8.49 8.49 0 0 1 12 0l-1.06 1.06a6.99 6.99 0 0 0-9.88 0L3 5.4ZM.46 2.86a12.04 12.04 0 0 1 17.08 0L16.48 3.92a10.54 10.54 0 0 0-14.96 0L.46 2.86Z"/></svg><svg class="sb-ico" viewBox="0 0 26 12" style="width:24px;height:11px"><rect x="1" y="2" width="20" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/><rect x="3" y="4" width="14" height="4" rx=".8"/><rect x="22" y="4.5" width="2" height="3" rx=".5" opacity=".55"/></svg></span></div>
+          <div class="screen"><div class="feed-card"><div class="card-image img-tools"><div class="overlay-top has-filter"><span class="wm">Armal News</span><span class="filter-pill"><svg class="ic"><use href="#i-wrench"/></svg>AI Tools &amp; Products<span class="x" aria-label="Clear filter"><svg><use href="#i-x"/></svg></span></span></div></div><div class="headline-anchor"><div class="headline"><h3>Cursor 2.0 ships parallel agents and a 'pause' key</h3></div></div><div class="summary-panel"><p class="summary">&ldquo;The new build runs up to four agents in the same workspace, with a thumb-friendly pause to interrupt mid-edit.&rdquo;</p><div class="tap-cta">Tap to read →</div></div></div></div>
+          <div class="home-indicator ios"></div>
+        </div>
+      </figure>
+      <figure class="frame"><figcaption>Dark <span class="dim">375 × 812</span></figcaption>
+        <div class="device theme-dark">
+          <div class="statusbar ios contrast-light"><span>9:41</span><span class="icons"><svg class="sb-ico" viewBox="0 0 18 11"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg><svg class="sb-ico" viewBox="0 0 18 12"><path d="M9 11.5a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm-3.5-3.6a4.95 4.95 0 0 1 7 0l-1.06 1.06a3.45 3.45 0 0 0-4.88 0L5.5 7.9Zm-2.5-2.5a8.49 8.49 0 0 1 12 0l-1.06 1.06a6.99 6.99 0 0 0-9.88 0L3 5.4ZM.46 2.86a12.04 12.04 0 0 1 17.08 0L16.48 3.92a10.54 10.54 0 0 0-14.96 0L.46 2.86Z"/></svg><svg class="sb-ico" viewBox="0 0 26 12" style="width:24px;height:11px"><rect x="1" y="2" width="20" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/><rect x="3" y="4" width="14" height="4" rx=".8"/><rect x="22" y="4.5" width="2" height="3" rx=".5" opacity=".55"/></svg></span></div>
+          <div class="screen"><div class="feed-card"><div class="card-image img-tools"><div class="overlay-top has-filter"><span class="wm">Armal News</span><span class="filter-pill"><svg class="ic"><use href="#i-wrench"/></svg>AI Tools &amp; Products<span class="x" aria-label="Clear filter"><svg><use href="#i-x"/></svg></span></span></div></div><div class="headline-anchor"><div class="headline"><h3>Cursor 2.0 ships parallel agents and a 'pause' key</h3></div></div><div class="summary-panel"><p class="summary">&ldquo;The new build runs up to four agents in the same workspace, with a thumb-friendly pause to interrupt mid-edit.&rdquo;</p><div class="tap-cta">Tap to read →</div></div></div></div>
+          <div class="home-indicator ios"></div>
+        </div>
+      </figure>
+    </div></div>
+  </section>
+
+  <!-- 03 CATEGORY BOTTOM SHEET -->
+  <section class="surface" id="bottom-sheet">
+    <header><span class="num">03</span><h2>Category bottom sheet</h2><span class="meta">~70% screen height · drag handle</span><p class="desc">Tapping the category area brings up a bottom sheet — rounded top corners, drag handle, dimmed backdrop. Each row is 56px, icon + name + active checkmark. "All stories" clears any active filter.</p></header>
+    <div class="device-row-wrap"><div class="device-row">
+      <figure class="frame"><figcaption>Light <span class="dim">375 × 812</span></figcaption>
+        <div class="device theme-light">
+          <div class="statusbar ios contrast-light"><span>9:41</span><span class="icons"><svg class="sb-ico" viewBox="0 0 18 11"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg><svg class="sb-ico" viewBox="0 0 18 12"><path d="M9 11.5a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm-3.5-3.6a4.95 4.95 0 0 1 7 0l-1.06 1.06a3.45 3.45 0 0 0-4.88 0L5.5 7.9Zm-2.5-2.5a8.49 8.49 0 0 1 12 0l-1.06 1.06a6.99 6.99 0 0 0-9.88 0L3 5.4ZM.46 2.86a12.04 12.04 0 0 1 17.08 0L16.48 3.92a10.54 10.54 0 0 0-14.96 0L.46 2.86Z"/></svg><svg class="sb-ico" viewBox="0 0 26 12" style="width:24px;height:11px"><rect x="1" y="2" width="20" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/><rect x="3" y="4" width="14" height="4" rx=".8"/><rect x="22" y="4.5" width="2" height="3" rx=".5" opacity=".55"/></svg></span></div>
+          <div class="screen">
+            <div class="feed-card"><div class="card-image img-cooking"><div class="overlay-top"><span class="cat-icon"><svg><use href="#i-utensils"/></svg></span><span class="wm">Armal News</span><span></span></div></div><div class="headline-anchor"><div class="headline"><h3>Restaurants are using vision models to QA every plate</h3></div></div><div class="summary-panel"><p class="summary">&ldquo;A small chain in Copenhagen reports a 30% drop in returned dishes after wiring up a $400 camera.&rdquo;</p><div class="tap-cta">Tap to read →</div></div></div>
+            <div class="sheet-backdrop"></div>
+            <div class="sheet"><div class="handle"></div><div class="sheet-title">Categories</div><div class="rows">
+              <div class="row"><span class="ic"></span><span class="name" style="opacity:.85">All stories</span><span class="check"></span></div>
+              <div class="row"><span class="ic"><svg><use href="#i-cpu"/></svg></span><span class="name">AI in Tech</span><span class="check"><svg><use href="#i-check"/></svg></span></div>
+              <div class="row"><span class="ic"><svg><use href="#i-trending"/></svg></span><span class="name">AI in Finance</span><span class="check"></span></div>
+              <div class="row"><span class="ic"><svg><use href="#i-pulse"/></svg></span><span class="name">AI in Healthcare</span><span class="check"></span></div>
+              <div class="row"><span class="ic"><svg><use href="#i-bot"/></svg></span><span class="name">AI in Robotics</span><span class="check"></span></div>
+              <div class="row active"><span class="ic"><svg><use href="#i-utensils"/></svg></span><span class="name">AI in Cooking</span><span class="check"><svg><use href="#i-check"/></svg></span></div>
+              <div class="row"><span class="ic"><svg><use href="#i-graduation"/></svg></span><span class="name">AI in Education</span><span class="check"></span></div>
+              <div class="row"><span class="ic"><svg><use href="#i-microscope"/></svg></span><span class="name">AI Research &amp; Models</span><span class="check"></span></div>
+              <div class="row"><span class="ic"><svg><use href="#i-wrench"/></svg></span><span class="name">AI Tools &amp; Products</span><span class="check"></span></div>
+              <div class="row"><span class="ic"><svg><use href="#i-shield"/></svg></span><span class="name">AI Policy &amp; Safety</span><span class="check"></span></div>
+            </div></div>
+          </div>
+          <div class="home-indicator ios"></div>
+        </div>
+      </figure>
+      <figure class="frame"><figcaption>Dark <span class="dim">375 × 812</span></figcaption>
+        <div class="device theme-dark">
+          <div class="statusbar ios contrast-light"><span>9:41</span><span class="icons"><svg class="sb-ico" viewBox="0 0 18 11"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg><svg class="sb-ico" viewBox="0 0 18 12"><path d="M9 11.5a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm-3.5-3.6a4.95 4.95 0 0 1 7 0l-1.06 1.06a3.45 3.45 0 0 0-4.88 0L5.5 7.9Zm-2.5-2.5a8.49 8.49 0 0 1 12 0l-1.06 1.06a6.99 6.99 0 0 0-9.88 0L3 5.4ZM.46 2.86a12.04 12.04 0 0 1 17.08 0L16.48 3.92a10.54 10.54 0 0 0-14.96 0L.46 2.86Z"/></svg><svg class="sb-ico" viewBox="0 0 26 12" style="width:24px;height:11px"><rect x="1" y="2" width="20" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/><rect x="3" y="4" width="14" height="4" rx=".8"/><rect x="22" y="4.5" width="2" height="3" rx=".5" opacity=".55"/></svg></span></div>
+          <div class="screen">
+            <div class="feed-card"><div class="card-image img-cooking"><div class="overlay-top"><span class="cat-icon"><svg><use href="#i-utensils"/></svg></span><span class="wm">Armal News</span><span></span></div></div><div class="headline-anchor"><div class="headline"><h3>Restaurants are using vision models to QA every plate</h3></div></div><div class="summary-panel"><p class="summary">&ldquo;A small chain in Copenhagen reports a 30% drop in returned dishes after wiring up a $400 camera.&rdquo;</p><div class="tap-cta">Tap to read →</div></div></div>
+            <div class="sheet-backdrop"></div>
+            <div class="sheet"><div class="handle"></div><div class="sheet-title">Categories</div><div class="rows">
+              <div class="row"><span class="ic"></span><span class="name" style="opacity:.85">All stories</span><span class="check"></span></div>
+              <div class="row"><span class="ic"><svg><use href="#i-cpu"/></svg></span><span class="name">AI in Tech</span><span class="check"><svg><use href="#i-check"/></svg></span></div>
+              <div class="row"><span class="ic"><svg><use href="#i-trending"/></svg></span><span class="name">AI in Finance</span><span class="check"></span></div>
+              <div class="row"><span class="ic"><svg><use href="#i-pulse"/></svg></span><span class="name">AI in Healthcare</span><span class="check"></span></div>
+              <div class="row"><span class="ic"><svg><use href="#i-bot"/></svg></span><span class="name">AI in Robotics</span><span class="check"></span></div>
+              <div class="row active"><span class="ic"><svg><use href="#i-utensils"/></svg></span><span class="name">AI in Cooking</span><span class="check"><svg><use href="#i-check"/></svg></span></div>
+              <div class="row"><span class="ic"><svg><use href="#i-graduation"/></svg></span><span class="name">AI in Education</span><span class="check"></span></div>
+              <div class="row"><span class="ic"><svg><use href="#i-microscope"/></svg></span><span class="name">AI Research &amp; Models</span><span class="check"></span></div>
+              <div class="row"><span class="ic"><svg><use href="#i-wrench"/></svg></span><span class="name">AI Tools &amp; Products</span><span class="check"></span></div>
+              <div class="row"><span class="ic"><svg><use href="#i-shield"/></svg></span><span class="name">AI Policy &amp; Safety</span><span class="check"></span></div>
+            </div></div>
+          </div>
+          <div class="home-indicator ios"></div>
+        </div>
+      </figure>
+    </div></div>
+  </section>
+
+  <!-- 04 DEEP-DIVE -->
+  <section class="surface" id="deepdive">
+    <header><span class="num">04</span><h2>Deep-dive article</h2><span class="meta">Pushed view · edge-swipe to dismiss</span><p class="desc">Light shows initial state: hero, glassy back button, eyebrow + title + italic summary. Dark shows scrolled state: collapsed hero, pull quote, tags, accent source CTA.</p></header>
+    <div class="device-row-wrap"><div class="device-row">
+      <figure class="frame"><figcaption>Light · initial <span class="dim">375 × 812</span></figcaption>
+        <div class="device theme-light">
+          <div class="statusbar ios contrast-light"><span>9:41</span><span class="icons"><svg class="sb-ico" viewBox="0 0 18 11"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg><svg class="sb-ico" viewBox="0 0 18 12"><path d="M9 11.5a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm-3.5-3.6a4.95 4.95 0 0 1 7 0l-1.06 1.06a3.45 3.45 0 0 0-4.88 0L5.5 7.9Zm-2.5-2.5a8.49 8.49 0 0 1 12 0l-1.06 1.06a6.99 6.99 0 0 0-9.88 0L3 5.4ZM.46 2.86a12.04 12.04 0 0 1 17.08 0L16.48 3.92a10.54 10.54 0 0 0-14.96 0L.46 2.86Z"/></svg><svg class="sb-ico" viewBox="0 0 26 12" style="width:24px;height:11px"><rect x="1" y="2" width="20" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/><rect x="3" y="4" width="14" height="4" rx=".8"/><rect x="22" y="4.5" width="2" height="3" rx=".5" opacity=".55"/></svg></span></div>
+          <div class="screen"><div class="deepdive"><div class="hero-image img-research"><a class="back-btn"><svg><use href="#i-chev-left"/></svg></a></div><div class="article"><div class="eyebrow">AI Research &amp; Models</div><h1>Anthropic open-sources interpretability tools for tracing model internals</h1><p class="summary">&ldquo;A new toolkit lets researchers see which features fire inside Claude when it answers a prompt — and edit them.&rdquo;</p><div class="body"><p>Anthropic published the toolkit on Tuesday, calling it the most permissive release of mechanistic interpretability infrastructure to date. The package — <span class="feat">claude-circuits</span> — attaches probes to any layer of an open-weights variant of Claude Sonnet&nbsp;3.5 and streams activations of named features in real time.</p></div></div></div></div>
+          <div class="home-indicator ios"></div>
+        </div>
+      </figure>
+      <figure class="frame"><figcaption>Dark · scrolled <span class="dim">375 × 812</span></figcaption>
+        <div class="device theme-dark">
+          <div class="statusbar ios contrast-light"><span>9:41</span><span class="icons"><svg class="sb-ico" viewBox="0 0 18 11"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg><svg class="sb-ico" viewBox="0 0 18 12"><path d="M9 11.5a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm-3.5-3.6a4.95 4.95 0 0 1 7 0l-1.06 1.06a3.45 3.45 0 0 0-4.88 0L5.5 7.9Zm-2.5-2.5a8.49 8.49 0 0 1 12 0l-1.06 1.06a6.99 6.99 0 0 0-9.88 0L3 5.4ZM.46 2.86a12.04 12.04 0 0 1 17.08 0L16.48 3.92a10.54 10.54 0 0 0-14.96 0L.46 2.86Z"/></svg><svg class="sb-ico" viewBox="0 0 26 12" style="width:24px;height:11px"><rect x="1" y="2" width="20" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/><rect x="3" y="4" width="14" height="4" rx=".8"/><rect x="22" y="4.5" width="2" height="3" rx=".5" opacity=".55"/></svg></span></div>
+          <div class="screen"><div class="deepdive" style="display:flex;flex-direction:column;"><div class="hero-image img-research" style="height:18%"><a class="back-btn"><svg><use href="#i-chev-left"/></svg></a></div><div class="article" style="flex:1;overflow:hidden;"><div class="eyebrow">AI Research &amp; Models</div><h1 style="font-size:23px;">Anthropic open-sources interpretability tools for tracing model internals</h1><div class="body"><p>The release has a careful boundary. Probes work only against <span class="feat">claude-sonnet-3-5-research</span>, a deliberately weaker checkpoint four months stale.</p><div class="pull">"We're not shipping interpretability for the frontier model on day zero. We're shipping it for a model close enough that the research transfers."</div><p style="color:var(--muted);font-size:13px;margin-top:6px;">— Sam McCandlish, Anthropic policy director</p></div><div class="tags"><span class="chip">#interpretability</span><span class="chip">#mechanistic</span><span class="chip">#claude-3-5</span><span class="chip">#open-source</span></div><a class="source-cta">View source <svg><use href="#i-arrow-up-right"/></svg></a><span class="source-host">anthropic.com / research / circuits-2026</span></div></div></div>
+          <div class="home-indicator ios"></div>
+        </div>
+      </figure>
+    </div></div>
+  </section>
+
+  <!-- 05 ONBOARDING -->
+  <section class="surface" id="onboarding">
+    <header><span class="num">05</span><h2>First-launch onboarding</h2><span class="meta">Single screen · no account · no category picker</span><p class="desc">No tour, no sign-up, no carousel. One screen, one promise, one button. Tap Continue and you're in the feed.</p></header>
+    <div class="device-row-wrap"><div class="device-row">
+      <figure class="frame"><figcaption>Light <span class="dim">375 × 812</span></figcaption>
+        <div class="device theme-light">
+          <div class="statusbar ios"><span>9:41</span><span class="icons"><svg class="sb-ico" viewBox="0 0 18 11"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg><svg class="sb-ico" viewBox="0 0 18 12"><path d="M9 11.5a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm-3.5-3.6a4.95 4.95 0 0 1 7 0l-1.06 1.06a3.45 3.45 0 0 0-4.88 0L5.5 7.9Zm-2.5-2.5a8.49 8.49 0 0 1 12 0l-1.06 1.06a6.99 6.99 0 0 0-9.88 0L3 5.4ZM.46 2.86a12.04 12.04 0 0 1 17.08 0L16.48 3.92a10.54 10.54 0 0 0-14.96 0L.46 2.86Z"/></svg><svg class="sb-ico" viewBox="0 0 26 12" style="width:24px;height:11px"><rect x="1" y="2" width="20" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/><rect x="3" y="4" width="14" height="4" rx=".8"/><rect x="22" y="4.5" width="2" height="3" rx=".5" opacity=".55"/></svg></span></div>
+          <div class="screen"><div class="onboarding"><div class="ob-mark"><div class="icon-mark">A</div><div class="wm">Armal News</div><p class="lede">Everything about AI. One story at a time.</p></div><div class="ob-foot"><div class="btn">Continue</div><div class="terms">No account needed. No ads. No comments.</div></div></div></div>
+          <div class="home-indicator ios"></div>
+        </div>
+      </figure>
+      <figure class="frame"><figcaption>Dark <span class="dim">375 × 812</span></figcaption>
+        <div class="device theme-dark">
+          <div class="statusbar ios"><span>9:41</span><span class="icons"><svg class="sb-ico" viewBox="0 0 18 11"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg><svg class="sb-ico" viewBox="0 0 18 12"><path d="M9 11.5a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm-3.5-3.6a4.95 4.95 0 0 1 7 0l-1.06 1.06a3.45 3.45 0 0 0-4.88 0L5.5 7.9Zm-2.5-2.5a8.49 8.49 0 0 1 12 0l-1.06 1.06a6.99 6.99 0 0 0-9.88 0L3 5.4ZM.46 2.86a12.04 12.04 0 0 1 17.08 0L16.48 3.92a10.54 10.54 0 0 0-14.96 0L.46 2.86Z"/></svg><svg class="sb-ico" viewBox="0 0 26 12" style="width:24px;height:11px"><rect x="1" y="2" width="20" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/><rect x="3" y="4" width="14" height="4" rx=".8"/><rect x="22" y="4.5" width="2" height="3" rx=".5" opacity=".55"/></svg></span></div>
+          <div class="screen"><div class="onboarding"><div class="ob-mark"><div class="icon-mark">A</div><div class="wm">Armal News</div><p class="lede">Everything about AI. One story at a time.</p></div><div class="ob-foot"><div class="btn">Continue</div><div class="terms">No account needed. No ads. No comments.</div></div></div></div>
+          <div class="home-indicator ios"></div>
+        </div>
+      </figure>
+    </div></div>
+  </section>
+
+  <!-- 06 APP ICON -->
+  <section class="surface" id="app-icon">
+    <header><span class="num">06</span><h2>App icon · adaptive variants</h2><span class="meta">iOS rounded-square mask · 1024×1024</span><p class="desc">Stylized "A" in italic Newsreader on warm-paper. Light and dark variants. No gradient, no badge.</p></header>
+    <div class="device-row-wrap"><div class="device-row icons-row">
+      <figure class="icon-plate"><figcaption>Light · 1024×1024</figcaption><div class="app-icon theme-light">A</div></figure>
+      <figure class="icon-plate"><figcaption>Dark · 1024×1024</figcaption><div class="app-icon theme-dark">A</div></figure>
+    </div></div>
+  </section>
+
+  <!-- 07 SPLASH -->
+  <section class="surface" id="splash">
+    <header><span class="num">07</span><h2>Splash screen</h2><span class="meta">Cold-launch · ~600ms</span><p class="desc">Wordmark centered on background. No spinner, no progress bar — cold-launch is fast enough that decoration feels apologetic.</p></header>
+    <div class="device-row-wrap"><div class="device-row">
+      <figure class="frame"><figcaption>Light <span class="dim">375 × 812</span></figcaption>
+        <div class="device theme-light">
+          <div class="statusbar ios"><span>9:41</span><span class="icons"><svg class="sb-ico" viewBox="0 0 18 11"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg><svg class="sb-ico" viewBox="0 0 18 12"><path d="M9 11.5a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm-3.5-3.6a4.95 4.95 0 0 1 7 0l-1.06 1.06a3.45 3.45 0 0 0-4.88 0L5.5 7.9Zm-2.5-2.5a8.49 8.49 0 0 1 12 0l-1.06 1.06a6.99 6.99 0 0 0-9.88 0L3 5.4ZM.46 2.86a12.04 12.04 0 0 1 17.08 0L16.48 3.92a10.54 10.54 0 0 0-14.96 0L.46 2.86Z"/></svg><svg class="sb-ico" viewBox="0 0 26 12" style="width:24px;height:11px"><rect x="1" y="2" width="20" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/><rect x="3" y="4" width="14" height="4" rx=".8"/><rect x="22" y="4.5" width="2" height="3" rx=".5" opacity=".55"/></svg></span></div>
+          <div class="screen"><div class="splash"><div class="wm">Armal News<small>News · refined</small></div></div></div>
+          <div class="home-indicator ios"></div>
+        </div>
+      </figure>
+      <figure class="frame"><figcaption>Dark <span class="dim">375 × 812</span></figcaption>
+        <div class="device theme-dark">
+          <div class="statusbar ios"><span>9:41</span><span class="icons"><svg class="sb-ico" viewBox="0 0 18 11"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg><svg class="sb-ico" viewBox="0 0 18 12"><path d="M9 11.5a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm-3.5-3.6a4.95 4.95 0 0 1 7 0l-1.06 1.06a3.45 3.45 0 0 0-4.88 0L5.5 7.9Zm-2.5-2.5a8.49 8.49 0 0 1 12 0l-1.06 1.06a6.99 6.99 0 0 0-9.88 0L3 5.4ZM.46 2.86a12.04 12.04 0 0 1 17.08 0L16.48 3.92a10.54 10.54 0 0 0-14.96 0L.46 2.86Z"/></svg><svg class="sb-ico" viewBox="0 0 26 12" style="width:24px;height:11px"><rect x="1" y="2" width="20" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1" opacity=".55"/><rect x="3" y="4" width="14" height="4" rx=".8"/><rect x="22" y="4.5" width="2" height="3" rx=".5" opacity=".55"/></svg></span></div>
+          <div class="screen"><div class="splash"><div class="wm">Armal News<small>News · refined</small></div></div></div>
+          <div class="home-indicator ios"></div>
+        </div>
+      </figure>
+    </div></div>
+  </section>
+
+  <footer class="foot">
+    <div>Armal News · mobile feed spec · v0.2</div>
+    <div>React Native · 7 screens · light + dark</div>
+  </footer>
+</main>
+</body>
+</html>

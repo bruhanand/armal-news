@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Armal News — Open Graph Card v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --display: 'Newsreader', Georgia, serif;
+    --body: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    --page-bg: #EBE5DA; --page-fg: #3D3929; --page-muted: #6B5F4D;
+    --page-border: #E0D8C7; --page-accent: #CC785C;
+    --paper: #F5F0E8; --surface: #EFEAE0; --ink: #3D3929; --muted: #6B5F4D;
+    --border: #E0D8C7; --accent: #CC785C;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--page-bg); color: var(--page-fg); font-family: var(--body); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  .page { max-width: 1480px; margin: 0 auto; padding: 64px 48px 96px; }
+  .topbar { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 40px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--page-muted); }
+  .topbar a { color: var(--page-muted); text-decoration: none; }
+  .topbar a:hover { color: var(--page-accent); }
+  header.masthead { border-bottom: 1px solid var(--page-border); padding-bottom: 36px; margin-bottom: 56px; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 32px; }
+  .masthead-left .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--page-muted); margin-bottom: 10px; }
+  .masthead-left h1 { font-family: var(--display); font-weight: 500; font-size: 48px; line-height: 1.05; letter-spacing: -0.012em; }
+  .masthead-left h1 em { font-style: italic; color: var(--page-accent); }
+  .masthead-left p { margin: 18px 0 0; color: var(--page-muted); font-size: 15px; max-width: 620px; line-height: 1.6; }
+  .legend { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--page-muted); border-left: 1px solid var(--page-border); padding-left: 32px; }
+
+  section.surface { margin-bottom: 80px; }
+  section.surface > .sh { border-bottom: 1px dashed var(--page-border); padding-bottom: 12px; margin-bottom: 28px; display: flex; align-items: baseline; gap: 16px; }
+  section.surface > .sh .sn { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--page-accent); }
+  section.surface > .sh h2 { font-family: var(--display); font-weight: 500; font-size: 30px; letter-spacing: -0.01em; }
+  section.surface > .sh .sm { font-family: var(--mono); font-size: 11px; color: var(--page-muted); letter-spacing: 0.08em; margin-left: auto; }
+  section.surface > .sd { font-size: 14px; color: var(--page-muted); margin-bottom: 24px; max-width: 680px; line-height: 1.6; }
+
+  .frame-row { display: flex; gap: 28px; flex-wrap: wrap; }
+  figure.frame { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+  figure.frame > figcaption { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--page-muted); display: flex; justify-content: space-between; align-items: baseline; max-width: 600px; }
+  figure.frame > figcaption .dim { opacity: 0.6; }
+
+  /* The OG card itself, rendered at 600×315 (½ scale of 1200×630) */
+  .og {
+    width: 600px; height: 315px;
+    position: relative; overflow: hidden;
+    border-radius: 6px;
+    box-shadow: 0 16px 36px -22px rgba(40,30,15,0.40), 0 0 0 1px rgba(40,30,15,0.10);
+    flex-shrink: 0;
+  }
+  .og .hero { position: absolute; inset: 0; background-color: #2B3960; }
+  .og .scrim {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 55%;
+    background: linear-gradient(0deg, rgba(245,240,232,0.96) 0%, rgba(245,240,232,0.86) 50%, rgba(245,240,232,0.0) 100%);
+  }
+
+  .og .wm {
+    position: absolute; top: 18px; left: 22px;
+    font-family: var(--display); font-style: italic; font-weight: 500;
+    font-size: 16px; letter-spacing: 0.04em;
+    color: rgba(245,240,232,0.78);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  }
+  .og .wm small {
+    display: inline-block; margin-left: 8px;
+    font-family: var(--mono); font-style: normal;
+    font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(245,240,232,0.55); vertical-align: 2px;
+  }
+
+  .og .stack {
+    position: absolute; left: 28px; right: 90px; bottom: 22px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .og .eyebrow {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--muted);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .og .eyebrow::before {
+    content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+  }
+  .og .title {
+    font-family: var(--display); font-weight: 600;
+    font-size: 26px; line-height: 1.13; letter-spacing: -0.008em;
+    color: var(--ink); text-wrap: balance;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .og .deck {
+    font-family: var(--display); font-style: italic; font-weight: 400;
+    font-size: 14px; line-height: 1.4; color: var(--muted);
+    text-wrap: pretty;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    margin-top: 2px;
+  }
+
+  .og .a-mark {
+    position: absolute; right: 22px; bottom: 22px;
+    width: 56px; height: 56px; border-radius: 14px;
+    background: var(--paper); border: 1px solid var(--border);
+    box-shadow: 0 4px 12px -6px rgba(40,30,15,0.20);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--display); font-style: italic; font-weight: 600;
+    font-size: 38px; line-height: 1; color: var(--accent);
+  }
+
+  /* Image presets — same gradients as the rest of the pack */
+  .img-research { background: radial-gradient(ellipse 80% 60% at 25% 20%, rgba(255,255,255,0.20), transparent 60%), linear-gradient(135deg, #1B2547 0%, #2E3D6E 60%, #4A5C9C 100%); }
+  .img-tools    { background: radial-gradient(ellipse 70% 50% at 30% 25%, rgba(255,220,200,0.30), transparent 60%), linear-gradient(135deg, #4A2A56 0%, #7C3F6C 55%, #C36A60 100%); }
+  .img-policy   { background: radial-gradient(ellipse 70% 60% at 80% 30%, rgba(200,220,255,0.20), transparent 60%), linear-gradient(135deg, #1A2230 0%, #2C3E5A 60%, #3D5A7C 100%); }
+  .img-cooking  { background: radial-gradient(ellipse 70% 60% at 30% 25%, rgba(255,232,180,0.30), transparent 60%), linear-gradient(135deg, #3A1F12 0%, #6E3E22 50%, #B8753F 100%); }
+
+  /* Spec table */
+  .spec { width: 100%; border-collapse: collapse; font-size: 13px; max-width: 880px; }
+  .spec th { text-align: left; padding: 8px 12px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--page-muted); border-bottom: 1px solid var(--page-border); font-weight: 600; }
+  .spec td { padding: 9px 12px; border-bottom: 1px solid var(--page-border); vertical-align: top; }
+  .spec tr:last-child td { border-bottom: none; }
+  .spec .name { font-family: var(--mono); font-size: 12px; color: var(--page-fg); white-space: nowrap; }
+  .spec .val { font-family: var(--mono); font-size: 11px; color: var(--page-muted); }
+  .spec .desc { font-size: 12px; color: var(--page-muted); }
+
+  /* Slack/iMessage preview wrappers */
+  .preview-row { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; }
+  .slack-msg { width: 480px; background: #fff; border: 1px solid #DDD; border-radius: 8px; padding: 14px 16px; box-shadow: 0 4px 14px -8px rgba(0,0,0,0.18); font-family: 'Inter', -apple-system, sans-serif; }
+  .slack-head { display: flex; align-items: baseline; gap: 8px; font-size: 13px; color: #1D1C1D; margin-bottom: 6px; }
+  .slack-head strong { font-weight: 700; }
+  .slack-head .ts { color: #696969; font-size: 11px; }
+  .slack-msg .url { color: #1264A3; font-size: 13px; margin-bottom: 8px; }
+  .slack-msg .card { display: grid; grid-template-columns: 4px 1fr; gap: 12px; padding: 4px 0; }
+  .slack-msg .bar { background: #E1E1E0; border-radius: 2px; }
+  .slack-msg .meta { font-size: 12px; color: #616061; margin-bottom: 4px; }
+  .slack-msg .ttl { font-size: 14px; font-weight: 600; color: #1264A3; line-height: 1.35; margin-bottom: 4px; }
+  .slack-msg .desc-line { font-size: 13px; color: #1D1C1D; line-height: 1.4; margin-bottom: 8px; }
+  .slack-msg .og-thumb { width: 100%; border-radius: 6px; overflow: hidden; }
+
+  .imsg { width: 320px; background: #F2F2F7; border-radius: 18px; padding: 12px 16px 14px; }
+  .imsg .url { font-size: 13px; color: #007AFF; margin-bottom: 8px; word-break: break-all; }
+  .imsg .og-thumb { width: 100%; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.10); }
+  .imsg .meta { padding-top: 10px; }
+  .imsg .ttl { font-size: 14px; font-weight: 600; color: #1A1A1A; line-height: 1.32; margin-bottom: 2px; }
+  .imsg .host { font-size: 12px; color: #616161; }
+
+  footer.foot { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--page-border); display: flex; justify-content: space-between; color: var(--page-muted); font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; }
+</style>
+</head>
+<body>
+
+<main class="page">
+  <div class="topbar">
+    <a href="armal-news-design-index.html">← Back to surface index</a>
+    <span>06 / Open Graph Card · v1</span>
+  </div>
+  <header class="masthead">
+    <div class="masthead-left">
+      <div class="eyebrow">Surface 06 · Sharing &amp; SEO</div>
+      <h1>Armal News — <em>open graph card</em></h1>
+      <p>The 1200×630 image rendered dynamically per Story by Next.js <code style="font-family:var(--mono);font-size:13px">opengraph-image.tsx</code> at <code style="font-family:var(--mono);font-size:13px">/story/[slug]</code>. Light palette only — OG cards render outside any theme context (Slack, iMessage, Twitter, WhatsApp render them as-is, no inheritance). Frames below shown at 50% (600×315).</p>
+    </div>
+    <div class="legend">1200 × 630 · light only</div>
+  </header>
+
+  <!-- 01 LAYOUT ANATOMY -->
+  <section class="surface">
+    <div class="sh"><span class="sn">01</span><h2>Layout anatomy</h2><span class="sm">Single layout · all Stories</span></div>
+    <p class="sd">Full-bleed image, warm-paper gradient overlay on the bottom 55%, content stack in the lower-left, "A" mark in the lower-right, wordmark in the upper-left at low opacity.</p>
+    <div class="frame-row">
+      <figure class="frame">
+        <figcaption>Anthropic interpretability tools <span class="dim">600 × 315 (½ of 1200 × 630)</span></figcaption>
+        <div class="og">
+          <div class="hero img-research"></div>
+          <div class="scrim"></div>
+          <div class="wm">Armal News<small>News · refined</small></div>
+          <div class="stack">
+            <div class="eyebrow">AI Research &amp; Models</div>
+            <div class="title">Anthropic open-sources interpretability tools for tracing model internals</div>
+            <div class="deck">&ldquo;A new toolkit lets researchers see which features fire inside Claude when it answers a prompt — and edit them.&rdquo;</div>
+          </div>
+          <div class="a-mark">A</div>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 02 EXAMPLES ACROSS CATEGORIES -->
+  <section class="surface">
+    <div class="sh"><span class="sn">02</span><h2>Examples across categories</h2><span class="sm">Same template · different Stories</span></div>
+    <p class="sd">The template is intentionally rigid — the layout never changes; only the image, eyebrow, title, and summary fill in. This is what every shared Story will look like in a chat preview.</p>
+    <div class="frame-row">
+      <figure class="frame">
+        <figcaption>Cursor 2.0 · AI Tools <span class="dim">600 × 315</span></figcaption>
+        <div class="og">
+          <div class="hero img-tools"></div>
+          <div class="scrim"></div>
+          <div class="wm">Armal News<small>News · refined</small></div>
+          <div class="stack">
+            <div class="eyebrow">AI Tools &amp; Products</div>
+            <div class="title">Cursor 2.0 ships parallel agents and a 'pause' key</div>
+            <div class="deck">&ldquo;The new build runs up to four agents in the same workspace, with a thumb-friendly pause to interrupt mid-edit.&rdquo;</div>
+          </div>
+          <div class="a-mark">A</div>
+        </div>
+      </figure>
+      <figure class="frame">
+        <figcaption>EU AI Act · Policy <span class="dim">600 × 315</span></figcaption>
+        <div class="og">
+          <div class="hero img-policy"></div>
+          <div class="scrim"></div>
+          <div class="wm">Armal News<small>News · refined</small></div>
+          <div class="stack">
+            <div class="eyebrow">AI Policy &amp; Safety</div>
+            <div class="title">EU AI Act enforcement body names first 12 high-risk classifications</div>
+            <div class="deck">&ldquo;The European AI Office published a preliminary list of systems requiring conformity assessment before deployment.&rdquo;</div>
+          </div>
+          <div class="a-mark">A</div>
+        </div>
+      </figure>
+      <figure class="frame">
+        <figcaption>Vision QA · Cooking <span class="dim">600 × 315</span></figcaption>
+        <div class="og">
+          <div class="hero img-cooking"></div>
+          <div class="scrim"></div>
+          <div class="wm">Armal News<small>News · refined</small></div>
+          <div class="stack">
+            <div class="eyebrow">AI in Cooking</div>
+            <div class="title">Restaurants are using vision models to QA every plate</div>
+            <div class="deck">&ldquo;A small chain in Copenhagen reports a 30% drop in returned dishes after wiring up a $400 camera.&rdquo;</div>
+          </div>
+          <div class="a-mark">A</div>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 03 IN CONTEXT -->
+  <section class="surface">
+    <div class="sh"><span class="sn">03</span><h2>In context — Slack &amp; iMessage</h2><span class="sm">Real-world preview</span></div>
+    <p class="sd">How the OG card lands when a reader pastes an Armal Story URL into a chat. Both clients use the same OG metadata: <code style="font-family:var(--mono);font-size:12px">og:image</code> for the card, <code style="font-family:var(--mono);font-size:12px">og:title</code> for the headline, <code style="font-family:var(--mono);font-size:12px">og:description</code> from the Story's short summary.</p>
+    <div class="preview-row">
+      <figure class="frame">
+        <figcaption>Slack unfurl <span class="dim">desktop client</span></figcaption>
+        <div class="slack-msg">
+          <div class="slack-head"><strong>Anand</strong><span class="ts">11:42 AM</span></div>
+          <div class="url">https://armal.news/story/anthropic-circuits</div>
+          <div class="card">
+            <div class="bar"></div>
+            <div>
+              <div class="meta">armal.news</div>
+              <div class="ttl">Anthropic open-sources interpretability tools for tracing model internals</div>
+              <div class="desc-line">"A new toolkit lets researchers see which features fire inside Claude when it answers a prompt — and edit them."</div>
+              <div class="og-thumb">
+                <div class="og" style="width:100%;height:auto;aspect-ratio:1200/630;border-radius:4px">
+                  <div class="hero img-research"></div>
+                  <div class="scrim"></div>
+                  <div class="wm">Armal News<small>News · refined</small></div>
+                  <div class="stack">
+                    <div class="eyebrow">AI Research &amp; Models</div>
+                    <div class="title">Anthropic open-sources interpretability tools for tracing model internals</div>
+                    <div class="deck">&ldquo;A new toolkit lets researchers see which features fire inside Claude when it answers a prompt — and edit them.&rdquo;</div>
+                  </div>
+                  <div class="a-mark">A</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </figure>
+      <figure class="frame">
+        <figcaption>iMessage rich link <span class="dim">iOS</span></figcaption>
+        <div class="imsg">
+          <div class="og-thumb">
+            <div class="og" style="width:100%;height:auto;aspect-ratio:1200/630;border-radius:8px 8px 0 0">
+              <div class="hero img-research"></div>
+              <div class="scrim"></div>
+              <div class="wm">Armal News<small>News · refined</small></div>
+              <div class="stack">
+                <div class="eyebrow">AI Research &amp; Models</div>
+                <div class="title">Anthropic open-sources interpretability tools for tracing model internals</div>
+                <div class="deck">&ldquo;A new toolkit lets researchers see which features fire inside Claude when it answers a prompt — and edit them.&rdquo;</div>
+              </div>
+              <div class="a-mark">A</div>
+            </div>
+          </div>
+          <div class="meta">
+            <div class="ttl">Anthropic open-sources interpretability tools for tracing model internals</div>
+            <div class="host">armal.news</div>
+          </div>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 04 SPEC -->
+  <section class="surface">
+    <div class="sh"><span class="sn">04</span><h2>Spec</h2><span class="sm">Tokens, sizes, line caps</span></div>
+    <p class="sd">All sizes given at native 1200×630. The implementation in <code style="font-family:var(--mono);font-size:12px">apps/web/app/story/[slug]/opengraph-image.tsx</code> uses <code style="font-family:var(--mono);font-size:12px">@vercel/og</code> (Satori) to render this layout server-side per request.</p>
+    <table class="spec">
+      <thead><tr><th>Layer</th><th>Position</th><th>Style</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="name">Hero image</td>
+          <td class="val">inset: 0</td>
+          <td class="val">cover, no crop hints</td>
+          <td class="desc">Story <code>image_url</code> from Supabase Storage. Always full-bleed.</td>
+        </tr>
+        <tr>
+          <td class="name">Scrim</td>
+          <td class="val">bottom 55%</td>
+          <td class="val">linear-gradient transparent → <code>#F5F0E8</code> @ 92%</td>
+          <td class="desc">Guarantees text contrast against any image. Not a mask — alpha-blended.</td>
+        </tr>
+        <tr>
+          <td class="name">Wordmark</td>
+          <td class="val">top: 36px / left: 44px</td>
+          <td class="val">Newsreader italic 32px / 0.04em / paper @ 78% opacity / drop-shadow 1×2 rgba(0,0,0,0.35)</td>
+          <td class="desc">"Armal News" + mono "News · refined" tagline.</td>
+        </tr>
+        <tr>
+          <td class="name">Eyebrow</td>
+          <td class="val">left: 56px / bottom: 188px</td>
+          <td class="val">JetBrains Mono 18px / 0.14em / uppercase / muted ink</td>
+          <td class="desc">Category name with leading 10px accent dot. Single line.</td>
+        </tr>
+        <tr>
+          <td class="name">Title</td>
+          <td class="val">left: 56px / right: 180px</td>
+          <td class="val">Newsreader 600 / 52px / line-height 1.13 / -0.008em / ink color / text-wrap balance</td>
+          <td class="desc">Max 2 lines, ellipsised on overflow.</td>
+        </tr>
+        <tr>
+          <td class="name">Deck</td>
+          <td class="val">left: 56px / right: 180px / below title</td>
+          <td class="val">Newsreader italic 28px / line-height 1.4 / muted ink</td>
+          <td class="desc">Short summary, curly quotes, max 2 lines.</td>
+        </tr>
+        <tr>
+          <td class="name">"A" mark</td>
+          <td class="val">right: 44px / bottom: 44px</td>
+          <td class="val">112×112 / radius 28px / paper bg / accent letter / 1px border / soft shadow</td>
+          <td class="desc">Italic Newsreader "A" at 76px on warm-paper rounded badge.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 05 RULES -->
+  <section class="surface">
+    <div class="sh"><span class="sn">05</span><h2>Rules</h2><span class="sm">Don't deviate</span></div>
+    <ul style="font-size:14px;line-height:1.7;color:var(--page-fg);max-width:680px;padding-left:18px">
+      <li><strong>Light palette only.</strong> Do not generate a dark variant — chat clients render OG cards on their own background.</li>
+      <li><strong>One template, no exceptions.</strong> No alternate layouts for breaking news, no variant cards. The image is the only thing that varies per Story.</li>
+      <li><strong>Title 2 lines max, deck 2 lines max.</strong> Truncate with ellipsis; never shrink type to fit.</li>
+      <li><strong>Accent rule still holds.</strong> The eyebrow dot is the one accent use on the card. Never tint the title, deck, or "A" mark fill against the rules.</li>
+      <li><strong>No URL on the card.</strong> Slack and iMessage already render the host (<code>armal.news</code>) outside the card. Putting it inside is redundant.</li>
+      <li><strong>No date / no read-time.</strong> OG cards live forever in chat history; volatile metadata makes them age poorly.</li>
+    </ul>
+  </section>
+
+  <footer class="foot">
+    <div>Armal News · open graph card · v1</div>
+    <div>1200 × 630 · light · per-Story dynamic via @vercel/og</div>
+  </footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,606 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Armal News — Admin Dashboard v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f9fafb;
+    --border: #e5e7eb;
+    --border-strong: #d1d5db;
+    --fg: #111827;
+    --muted: #6b7280;
+    --subtle: #9ca3af;
+    --accent: #CC785C;
+    --accent-hover: #b8634a;
+    --success: #16a34a;
+    --success-bg: #f0fdf4;
+    --success-border: #bbf7d0;
+    --danger: #dc2626;
+    --danger-bg: #fef2f2;
+    --danger-border: #fecaca;
+    --warn: #d97706;
+    --warn-bg: #fffbeb;
+    --warn-border: #fde68a;
+    --info-bg: #f0f9ff;
+    --info-border: #bae6fd;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow: 0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.10), 0 2px 4px -1px rgba(0,0,0,0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.10), 0 4px 6px -2px rgba(0,0,0,0.05);
+    --radius: 6px;
+    --body: 'Inter', -apple-system, system-ui, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { font-family: var(--body); font-size: 14px; color: var(--fg); background: var(--bg); -webkit-font-smoothing: antialiased; line-height: 1.5; }
+  a { color: inherit; text-decoration: none; }
+
+  .page { max-width: 1680px; margin: 0 auto; padding: 64px 48px 96px; }
+  .topbar { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 40px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .topbar a { color: var(--muted); }
+  header.masthead { border-bottom: 1px solid var(--border); padding-bottom: 28px; margin-bottom: 48px; }
+  .masthead .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .masthead h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; color: var(--fg); }
+  .masthead h1 span { color: var(--accent); }
+  .masthead p { margin-top: 8px; color: var(--muted); font-size: 14px; max-width: 560px; }
+  section.surface { margin-bottom: 80px; }
+  section.surface > .sh { border-bottom: 1px dashed var(--border); padding-bottom: 12px; margin-bottom: 24px; display: flex; align-items: baseline; gap: 16px; }
+  section.surface > .sh .sn { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+  section.surface > .sh h2 { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  section.surface > .sh .sm { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.06em; margin-left: auto; }
+  section.surface > .sd { font-size: 13px; color: var(--muted); margin-bottom: 20px; max-width: 680px; line-height: 1.6; }
+  footer.foot { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; color: var(--muted); font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; }
+
+  .btn { display: inline-flex; align-items: center; gap: 5px; padding: 0 12px; height: 32px; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; white-space: nowrap; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-secondary { background: var(--bg); color: var(--fg); border-color: var(--border-strong); }
+  .btn-danger { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-border); }
+  .btn-success { background: var(--success-bg); color: var(--success); border-color: var(--success-border); }
+  .btn-ghost { background: transparent; color: var(--muted); border-color: transparent; }
+  .btn svg { width: 13px; height: 13px; }
+  .badge { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; font-family: var(--mono); letter-spacing: 0.04em; }
+  .badge-draft { background: #f3f4f6; color: var(--muted); }
+  .badge-published { background: var(--success-bg); color: var(--success); }
+  .badge-rejected { background: var(--danger-bg); color: var(--danger); }
+  .tag-chip { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 4px; background: #f3f4f6; border: 1px solid var(--border); font-size: 11px; font-family: var(--mono); color: var(--muted); }
+  .tag-chip .tc-x { width: 12px; height: 12px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--border-strong); cursor: pointer; }
+  .tag-chip .tc-x svg { width: 8px; height: 8px; stroke-width: 2.5; }
+  .cat-pill { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1px solid var(--border); font-size: 11px; color: var(--fg); background: var(--surface); }
+  .cat-pill.selected { background: #fff7f5; border-color: #f5c3b3; color: var(--accent); }
+  input[type=text], textarea { font-family: var(--body); font-size: 13px; color: var(--fg); background: var(--bg); border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 7px 10px; width: 100%; outline: none; line-height: 1.5; }
+  input[type=text]:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(204,120,92,0.12); }
+  input[type=text].error, textarea.error { border-color: var(--danger); box-shadow: 0 0 0 2px rgba(220,38,38,0.10); }
+  label { font-size: 12px; font-weight: 600; color: var(--fg); display: block; margin-bottom: 5px; }
+  label .req { color: var(--danger); margin-left: 2px; }
+  .field { margin-bottom: 16px; }
+  .field-err { font-size: 11px; color: var(--danger); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+  .field-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+  .win-wrap { border: 1px solid var(--border-strong); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow-lg); }
+  .win-chrome { height: 40px; background: #f1f3f4; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 12px; gap: 12px; }
+  .win-dots { display: flex; gap: 6px; }
+  .wd { width: 11px; height: 11px; border-radius: 50%; }
+  .wd.r { background: #FF5F57; } .wd.y { background: #FEBC2E; } .wd.g { background: #28C840; }
+  .win-title { font-size: 12px; color: var(--muted); font-family: var(--mono); flex: 1; text-align: center; }
+  .win-body { display: flex; height: 620px; }
+
+  .sidebar { width: 220px; flex-shrink: 0; border-right: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; padding: 16px 0; }
+  .sb-brand { padding: 0 16px 16px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+  .sb-brand .sb-logo { font-weight: 700; font-size: 14px; letter-spacing: -0.01em; }
+  .sb-brand .sb-sub { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
+  .sb-section { padding: 8px 8px 4px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--subtle); }
+  .sb-item { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 5px; margin: 1px 8px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; }
+  .sb-item:hover { background: var(--bg); color: var(--fg); }
+  .sb-item.active { background: var(--bg); color: var(--fg); }
+  .sb-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .sb-item .sb-count { margin-left: auto; font-family: var(--mono); font-size: 11px; padding: 1px 6px; border-radius: 999px; background: #f3f4f6; color: var(--muted); }
+  .sb-item.active .sb-count { background: var(--accent); color: #fff; }
+  .sb-foot { margin-top: auto; padding: 12px 8px 0; border-top: 1px solid var(--border); }
+
+  .content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+  .content-head { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0; }
+  .ch-title { font-weight: 600; font-size: 14px; }
+  .ch-actions { display: flex; gap: 8px; align-items: center; }
+  .status-tabs { display: flex; gap: 1px; background: var(--border); border-radius: 6px; padding: 2px; }
+  .st-tab { padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 500; cursor: pointer; color: var(--muted); display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .st-tab.active { background: var(--bg); color: var(--fg); box-shadow: var(--shadow-sm); }
+  .st-tab .stc { font-family: var(--mono); font-size: 10px; padding: 1px 5px; border-radius: 999px; background: #f3f4f6; }
+  .st-tab.active .stc { background: var(--accent); color: #fff; }
+
+  .tbl-wrap { flex: 1; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead { position: sticky; top: 0; background: var(--surface); z-index: 10; }
+  th { padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafafa; }
+  .tr-sel td { background: #fff7f5; }
+  .td-inner { padding: 10px 12px; }
+  .td-thumb { width: 56px; }
+  .td-thumb .thumb { width: 40px; height: 40px; border-radius: 5px; flex-shrink: 0; overflow: hidden; }
+  .th-img { width: 64px; }
+  .td-title .tt { font-weight: 600; font-size: 13px; line-height: 1.35; color: var(--fg); max-width: 280px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .td-title .ts { font-size: 12px; color: var(--muted); margin-top: 3px; max-width: 280px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .td-cats { width: 160px; }
+  .td-cats .cat-list { display: flex; flex-wrap: wrap; gap: 3px; }
+  .td-time { width: 100px; font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .td-actions { width: 130px; }
+  .td-actions .act-row { display: flex; gap: 4px; }
+  .search-input { position: relative; }
+  .search-input input { height: 30px; padding-left: 28px; width: 200px; font-size: 12px; }
+  .search-input svg { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; stroke: var(--muted); }
+
+  .detail-split { display: flex; flex: 1; overflow: hidden; }
+  .detail-list { width: 320px; flex-shrink: 0; border-right: 1px solid var(--border); overflow-y: auto; }
+  .detail-pane { flex: 1; overflow-y: auto; padding: 20px 24px; }
+  .dl-item { padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; gap: 10px; }
+  .dl-item:hover { background: #fafafa; }
+  .dl-item.active { background: #fff7f5; border-left: 2px solid var(--accent); padding-left: 12px; }
+  .dl-thumb { width: 44px; height: 44px; border-radius: 5px; flex-shrink: 0; overflow: hidden; }
+  .dl-info .dl-t { font-weight: 600; font-size: 12px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .dl-info .dl-m { font-size: 11px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 5px; }
+  .form-section { margin-bottom: 20px; }
+  .form-section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .img-preview { width: 100%; height: 180px; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 6px; position: relative; }
+  .img-badge { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.55); color: #fff; font-size: 10px; font-family: var(--mono); padding: 2px 7px; border-radius: 4px; }
+  .cat-grid { display: flex; flex-wrap: wrap; gap: 5px; }
+  .tags-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+  .tag-add { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border: 1px dashed var(--border-strong); border-radius: 4px; font-size: 11px; color: var(--muted); cursor: pointer; background: transparent; }
+  .id-display { font-family: var(--mono); font-size: 12px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 10px; }
+  .action-bar { display: flex; gap: 8px; padding-top: 16px; border-top: 1px solid var(--border); margin-top: 4px; }
+  .save-status { font-size: 12px; color: var(--success); display: flex; align-items: center; gap: 4px; margin-left: auto; }
+  .save-status svg { width: 13px; height: 13px; }
+  textarea { resize: vertical; min-height: 80px; }
+  .tab-row { display: flex; gap: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 8px; }
+  .tab-btn { flex: 1; padding: 5px 10px; font-size: 12px; font-weight: 500; text-align: center; cursor: pointer; color: var(--muted); background: var(--surface); border: none; }
+  .tab-btn.active { background: var(--bg); color: var(--fg); }
+
+  .toast-wrap { position: relative; height: 56px; }
+  .toast { position: absolute; right: 16px; top: 8px; display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; box-shadow: var(--shadow-md); font-size: 13px; font-weight: 500; min-width: 280px; border: 1px solid transparent; }
+  .toast-success { background: var(--success-bg); border-color: var(--success-border); color: var(--success); }
+  .toast-error { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger); }
+  .toast svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .toast-x { margin-left: auto; opacity: 0.6; cursor: pointer; }
+  .toast-x svg { width: 13px; height: 13px; }
+
+  .dialog-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 50; border-radius: 10px; }
+  .dialog { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 24px; width: 360px; box-shadow: var(--shadow-lg); }
+  .dialog h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+  .dialog p { font-size: 13px; color: var(--muted); line-height: 1.55; margin-bottom: 20px; }
+  .dialog-acts { display: flex; gap: 8px; justify-content: flex-end; }
+
+  .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; padding: 40px; text-align: center; }
+  .empty-icon { width: 48px; height: 48px; color: var(--subtle); }
+  .empty h3 { font-size: 15px; font-weight: 600; }
+  .empty p { font-size: 13px; color: var(--muted); max-width: 300px; }
+
+  .val-banner { background: var(--danger-bg); border: 1px solid var(--danger-border); border-radius: 6px; padding: 10px 14px; display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--danger); margin-bottom: 16px; }
+  .val-banner svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; }
+
+  .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .img-r { background: radial-gradient(ellipse 80% 60% at 25% 20%, rgba(255,255,255,0.20), transparent 60%), linear-gradient(135deg, #1B2547 0%, #2E3D6E 60%, #4A5C9C 100%); }
+  .img-t { background: radial-gradient(ellipse 70% 50% at 30% 25%, rgba(255,220,200,0.30), transparent 60%), linear-gradient(135deg, #4A2A56 0%, #7C3F6C 55%, #C36A60 100%); }
+  .img-p { background: radial-gradient(ellipse 70% 60% at 80% 30%, rgba(200,220,255,0.20), transparent 60%), linear-gradient(135deg, #1A2230 0%, #2C3E5A 60%, #3D5A7C 100%); }
+  .img-h { background: radial-gradient(ellipse 70% 60% at 40% 20%, rgba(200,240,220,0.25), transparent 60%), linear-gradient(135deg, #1A3028 0%, #2C5040 60%, #3D8060 100%); }
+  .img-f { background: radial-gradient(ellipse 70% 60% at 30% 25%, rgba(255,232,180,0.30), transparent 60%), linear-gradient(135deg, #3A1F12 0%, #6E3E22 50%, #B8753F 100%); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></symbol>
+  <symbol id="i-x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></symbol>
+  <symbol id="i-inbox-empty" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+</defs></svg>
+
+<main class="page">
+  <div class="topbar">
+    <a href="armal-news-design-index.html">← Back to surface index</a>
+    <span>03 / Admin · v1 · internal tool</span>
+  </div>
+  <header class="masthead">
+    <div class="eyebrow">Surface 03 · Admin Dashboard · Desktop only · Tailscale</div>
+    <h1>Armal News — <span>Admin</span></h1>
+    <p>Internal utility tool. Runs only on the admin's MacBook over Tailscale. Dense, functional — Linear/shadcn posture. Light mode only. Six screens shown.</p>
+  </header>
+
+  <!-- 01 DRAFTS QUEUE -->
+  <section class="surface" id="drafts-queue">
+    <div class="sh"><span class="sn">01</span><h2>Drafts queue — /</h2><span class="sm">Default route · newest first</span></div>
+    <p class="sd">The landing screen. Table of all draft Stories, newest first. Sidebar shows counts per status. Each row: thumbnail, title, excerpt, categories, ingest time, quick Publish + Reject actions.</p>
+    <div class="win-wrap">
+      <div class="win-chrome"><div class="win-dots"><div class="wd r"></div><div class="wd y"></div><div class="wd g"></div></div><div class="win-title">localhost:3001 — Armal Admin</div></div>
+      <div class="win-body">
+        <div class="sidebar">
+          <div class="sb-brand"><div class="sb-logo">Armal Admin</div><div class="sb-sub">Internal · v0.1</div></div>
+          <div class="sb-section">Content</div>
+          <div class="sb-item active"><svg><use href="#i-inbox"/></svg>Drafts<span class="sb-count">12</span></div>
+          <div class="sb-item"><svg><use href="#i-check-circle"/></svg>Published<span class="sb-count">84</span></div>
+          <div class="sb-item"><svg><use href="#i-x-circle"/></svg>Rejected<span class="sb-count">7</span></div>
+          <div class="sb-section">System</div>
+          <div class="sb-item"><svg><use href="#i-settings"/></svg>Settings</div>
+          <div class="sb-foot"><div class="sb-item" style="font-size:11px;color:var(--subtle)">admin@armal.news</div></div>
+        </div>
+        <div class="content">
+          <div class="content-head">
+            <div class="ch-title">Drafts queue <span style="font-weight:400;color:var(--muted);font-size:12px;margin-left:4px;">12 stories</span></div>
+            <div class="ch-actions">
+              <div class="search-input"><svg><use href="#i-search"/></svg><input type="text" placeholder="Search stories…" /></div>
+              <div class="status-tabs">
+                <div class="st-tab active">Draft <span class="stc">12</span></div>
+                <div class="st-tab">Published <span class="stc" style="background:#f3f4f6;color:var(--muted)">84</span></div>
+                <div class="st-tab">Rejected <span class="stc" style="background:#f3f4f6;color:var(--muted)">7</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th class="th-img"></th><th>Title / Summary</th><th>Categories</th><th>Ingested</th><th></th></tr></thead>
+              <tbody>
+                <tr class="tr-sel">
+                  <td><div class="td-inner td-thumb"><div class="thumb img-r"></div></div></td>
+                  <td><div class="td-inner td-title"><div class="tt">Anthropic open-sources interpretability tools for tracing model internals</div><div class="ts">A new toolkit lets researchers see which features fire inside Claude when it answers a prompt — and edit them.</div></div></td>
+                  <td><div class="td-inner td-cats"><div class="cat-list"><span class="cat-pill selected" style="font-size:10px">AI Research</span></div></div></td>
+                  <td><div class="td-inner td-time">2 min ago</div></td>
+                  <td><div class="td-inner td-actions"><div class="act-row"><div class="btn btn-success" style="height:28px;font-size:12px;padding:0 10px"><svg><use href="#i-check"/></svg>Publish</div><div class="btn btn-danger" style="height:28px;font-size:12px;padding:0 10px"><svg><use href="#i-x"/></svg>Reject</div></div></div></td>
+                </tr>
+                <tr>
+                  <td><div class="td-inner td-thumb"><div class="thumb img-t"></div></div></td>
+                  <td><div class="td-inner td-title"><div class="tt">Cursor 2.0 ships parallel agents and a 'pause' key for mid-edit interruption</div><div class="ts">The new build runs up to four agents in the same workspace, with a thumb-friendly pause.</div></div></td>
+                  <td><div class="td-inner td-cats"><div class="cat-list"><span class="cat-pill" style="font-size:10px">AI Tools</span></div></div></td>
+                  <td><div class="td-inner td-time">18 min ago</div></td>
+                  <td><div class="td-inner td-actions"><div class="act-row"><div class="btn btn-success" style="height:28px;font-size:12px;padding:0 10px"><svg><use href="#i-check"/></svg>Publish</div><div class="btn btn-danger" style="height:28px;font-size:12px;padding:0 10px"><svg><use href="#i-x"/></svg>Reject</div></div></div></td>
+                </tr>
+                <tr>
+                  <td><div class="td-inner td-thumb"><div class="thumb img-h"></div></div></td>
+                  <td><div class="td-inner td-title"><div class="tt">AI triage tool cuts ED wait times by 22% in NHS pilot at Moorfields Eye Hospital</div><div class="ts">A vision-model pre-screener routed patients before any clinician saw them, cutting median wait from 4.2h to 3.3h.</div></div></td>
+                  <td><div class="td-inner td-cats"><div class="cat-list"><span class="cat-pill" style="font-size:10px">Healthcare</span></div></div></td>
+                  <td><div class="td-inner td-time">41 min ago</div></td>
+                  <td><div class="td-inner td-actions"><div class="act-row"><div class="btn btn-success" style="height:28px;font-size:12px;padding:0 10px"><svg><use href="#i-check"/></svg>Publish</div><div class="btn btn-danger" style="height:28px;font-size:12px;padding:0 10px"><svg><use href="#i-x"/></svg>Reject</div></div></div></td>
+                </tr>
+                <tr>
+                  <td><div class="td-inner td-thumb"><div class="thumb img-p"></div></div></td>
+                  <td><div class="td-inner td-title"><div class="tt">EU AI Act enforcement body names first 12 "high-risk system" classifications</div><div class="ts">The European AI Office published a preliminary list of systems requiring conformity assessment before deployment.</div></div></td>
+                  <td><div class="td-inner td-cats"><div class="cat-list"><span class="cat-pill" style="font-size:10px">Policy &amp; Safety</span></div></div></td>
+                  <td><div class="td-inner td-time">1 hr ago</div></td>
+                  <td><div class="td-inner td-actions"><div class="act-row"><div class="btn btn-success" style="height:28px;font-size:12px;padding:0 10px"><svg><use href="#i-check"/></svg>Publish</div><div class="btn btn-danger" style="height:28px;font-size:12px;padding:0 10px"><svg><use href="#i-x"/></svg>Reject</div></div></div></td>
+                </tr>
+                <tr>
+                  <td><div class="td-inner td-thumb"><div class="thumb img-f"></div></div></td>
+                  <td><div class="td-inner td-title"><div class="tt">Restaurants using vision models to QA every plate report 30% fewer returns</div><div class="ts">A small chain in Copenhagen wired up a $400 camera and a fine-tuned food-safety classifier.</div></div></td>
+                  <td><div class="td-inner td-cats"><div class="cat-list"><span class="cat-pill" style="font-size:10px">AI in Cooking</span></div></div></td>
+                  <td><div class="td-inner td-time">2 hr ago</div></td>
+                  <td><div class="td-inner td-actions"><div class="act-row"><div class="btn btn-success" style="height:28px;font-size:12px;padding:0 10px"><svg><use href="#i-check"/></svg>Publish</div><div class="btn btn-danger" style="height:28px;font-size:12px;padding:0 10px"><svg><use href="#i-x"/></svg>Reject</div></div></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 DRAFT DETAIL EDITOR -->
+  <section class="surface" id="draft-detail">
+    <div class="sh"><span class="sn">02</span><h2>Draft detail editor — /stories/[id]</h2><span class="sm">Two-pane · list + edit form</span></div>
+    <p class="sd">Left pane: scrollable story list (same as queue, condensed). Right pane: full edit form — image preview (read-only), inline editable fields, category multi-select, tags chips, external ID (display-only), action bar.</p>
+    <div class="win-wrap">
+      <div class="win-chrome"><div class="win-dots"><div class="wd r"></div><div class="wd y"></div><div class="wd g"></div></div><div class="win-title">localhost:3001/stories/abc-123</div></div>
+      <div class="win-body">
+        <div class="sidebar">
+          <div class="sb-brand"><div class="sb-logo">Armal Admin</div><div class="sb-sub">Internal · v0.1</div></div>
+          <div class="sb-section">Content</div>
+          <div class="sb-item active"><svg><use href="#i-inbox"/></svg>Drafts<span class="sb-count">12</span></div>
+          <div class="sb-item"><svg><use href="#i-check-circle"/></svg>Published<span class="sb-count">84</span></div>
+          <div class="sb-item"><svg><use href="#i-x-circle"/></svg>Rejected<span class="sb-count">7</span></div>
+          <div class="sb-section">System</div>
+          <div class="sb-item"><svg><use href="#i-settings"/></svg>Settings</div>
+        </div>
+        <div class="content">
+          <div class="content-head">
+            <div class="ch-title">Editing draft</div>
+            <div class="ch-actions"><div class="badge badge-draft">Draft</div></div>
+          </div>
+          <div class="detail-split">
+            <div class="detail-list">
+              <div class="dl-item active"><div class="dl-thumb img-r"></div><div class="dl-info"><div class="dl-t">Anthropic open-sources interpretability tools</div><div class="dl-m"><span class="badge badge-draft" style="font-size:10px">Draft</span>2m ago</div></div></div>
+              <div class="dl-item"><div class="dl-thumb img-t"></div><div class="dl-info"><div class="dl-t">Cursor 2.0 ships parallel agents and a 'pause' key</div><div class="dl-m"><span class="badge badge-draft" style="font-size:10px">Draft</span>18m ago</div></div></div>
+              <div class="dl-item"><div class="dl-thumb img-h"></div><div class="dl-info"><div class="dl-t">AI triage tool cuts ED wait times by 22% in NHS pilot</div><div class="dl-m"><span class="badge badge-draft" style="font-size:10px">Draft</span>41m ago</div></div></div>
+              <div class="dl-item"><div class="dl-thumb img-p"></div><div class="dl-info"><div class="dl-t">EU AI Act enforcement body names first 12 classifications</div><div class="dl-m"><span class="badge badge-draft" style="font-size:10px">Draft</span>1h ago</div></div></div>
+              <div class="dl-item"><div class="dl-thumb img-f"></div><div class="dl-info"><div class="dl-t">Restaurants using vision models to QA every plate</div><div class="dl-m"><span class="badge badge-draft" style="font-size:10px">Draft</span>2h ago</div></div></div>
+            </div>
+            <div class="detail-pane">
+              <div class="form-section"><div class="form-section-title">Image</div><div class="img-preview img-r"><span class="img-badge">Read-only · set at ingest</span></div></div>
+              <div class="form-section">
+                <div class="form-section-title">Content</div>
+                <div class="field"><label>Title <span class="req">*</span></label><input type="text" value="Anthropic open-sources interpretability tools for tracing model internals" /></div>
+                <div class="field"><label>Short summary <span class="req">*</span></label><input type="text" value="A new toolkit lets researchers see which features fire inside Claude when it answers a prompt — and edit them." /></div>
+                <div class="field"><label>Body <span class="req">*</span></label><div class="tab-row"><div class="tab-btn active">Edit</div><div class="tab-btn">Preview</div></div><textarea rows="5">Anthropic published the toolkit on Tuesday, calling it the most permissive release of mechanistic interpretability infrastructure to date. The package — `claude-circuits` — attaches probes to any layer of an open-weights variant of Claude Sonnet 3.5 and streams activations of named features in real time.</textarea></div>
+                <div class="field"><label>Source link</label><input type="text" value="https://anthropic.com/research/circuits-2026" /></div>
+              </div>
+              <div class="form-section"><div class="form-section-title">Categories</div><div class="cat-grid"><span class="cat-pill">AI in Tech</span><span class="cat-pill">AI in Finance</span><span class="cat-pill">AI in Healthcare</span><span class="cat-pill">AI in Robotics</span><span class="cat-pill">AI in Cooking</span><span class="cat-pill">AI in Education</span><span class="cat-pill selected">AI Research &amp; Models</span><span class="cat-pill">AI Tools &amp; Products</span><span class="cat-pill">AI Policy &amp; Safety</span></div></div>
+              <div class="form-section"><div class="form-section-title">Tags</div><div class="tags-row"><div class="tag-chip">#interpretability<div class="tc-x"><svg><use href="#i-x"/></svg></div></div><div class="tag-chip">#mechanistic<div class="tc-x"><svg><use href="#i-x"/></svg></div></div><div class="tag-chip">#claude-3-5<div class="tc-x"><svg><use href="#i-x"/></svg></div></div><div class="tag-chip">#open-source<div class="tc-x"><svg><use href="#i-x"/></svg></div></div><div class="tag-add"><svg width="11" height="11"><use href="#i-plus"/></svg>Add tag</div></div></div>
+              <div class="form-section"><div class="form-section-title">External ID</div><div class="id-display">ext_7fac1b2d3e4f5a6c</div></div>
+              <div class="divider"></div>
+              <div class="action-bar"><div class="btn btn-success"><svg><use href="#i-check"/></svg>Publish</div><div class="btn btn-danger"><svg><use href="#i-x"/></svg>Reject</div><div class="btn btn-secondary">Save changes</div><div class="save-status"><svg><use href="#i-check"/></svg>Saved 12s ago</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 EXTRA STATES -->
+  <section class="surface" id="extra-states">
+    <div class="sh"><span class="sn">03</span><h2>Extra states</h2><span class="sm">Empty queue · Reject dialog · Toasts · Validation</span></div>
+    <p class="sd">Four states: empty drafts queue, reject confirmation dialog, success + error toasts, and form validation errors on publish attempt.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+      <div>
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Empty queue</div>
+        <div class="win-wrap" style="height:360px;"><div class="win-chrome"><div class="win-dots"><div class="wd r"></div><div class="wd y"></div><div class="wd g"></div></div><div class="win-title">localhost:3001</div></div>
+          <div class="win-body" style="height:320px;"><div class="sidebar" style="height:320px;"><div class="sb-brand"><div class="sb-logo">Armal Admin</div><div class="sb-sub">Internal</div></div><div class="sb-item active"><svg><use href="#i-inbox"/></svg>Drafts<span class="sb-count">0</span></div><div class="sb-item"><svg><use href="#i-check-circle"/></svg>Published<span class="sb-count">84</span></div><div class="sb-item"><svg><use href="#i-x-circle"/></svg>Rejected<span class="sb-count">7</span></div></div>
+          <div class="content" style="height:320px;"><div class="content-head"><div class="ch-title">Drafts queue</div></div><div class="empty"><svg class="empty-icon"><use href="#i-inbox-empty"/></svg><h3>No drafts in queue</h3><p>All caught up. New stories from the ingestion pipeline will appear here.</p></div></div></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Reject confirmation</div>
+        <div class="win-wrap" style="height:360px;"><div class="win-chrome"><div class="win-dots"><div class="wd r"></div><div class="wd y"></div><div class="wd g"></div></div><div class="win-title">localhost:3001</div></div>
+          <div class="win-body" style="height:320px;position:relative;"><div class="sidebar" style="height:320px;opacity:0.35;"><div class="sb-brand"><div class="sb-logo">Armal Admin</div></div><div class="sb-item active"><svg><use href="#i-inbox"/></svg>Drafts<span class="sb-count">12</span></div></div>
+          <div class="content" style="height:320px;opacity:0.35;"><div class="content-head"><div class="ch-title">Drafts queue</div></div></div>
+          <div class="dialog-overlay"><div class="dialog"><h3>Reject this story?</h3><p>This will move the story to <strong>Rejected</strong>. It won't be published and can be reviewed later from the Rejected tab.</p><div class="dialog-acts"><div class="btn btn-secondary">Cancel</div><div class="btn btn-danger"><svg><use href="#i-x"/></svg>Reject story</div></div></div></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Toasts — success &amp; error</div>
+        <div class="win-wrap" style="height:360px;"><div class="win-chrome"><div class="win-dots"><div class="wd r"></div><div class="wd y"></div><div class="wd g"></div></div><div class="win-title">localhost:3001</div></div>
+          <div class="win-body" style="height:320px;position:relative;"><div class="content" style="width:100%;height:320px;">
+            <div class="content-head"><div class="ch-title">Drafts queue <span style="font-weight:400;color:var(--muted);font-size:12px;margin-left:4px;">11 stories</span></div></div>
+            <div class="tbl-wrap" style="opacity:0.4;"><table><thead><tr><th class="th-img"></th><th>Title</th><th>Categories</th><th>Ingested</th><th></th></tr></thead><tbody><tr><td><div class="td-inner td-thumb"><div class="thumb img-t"></div></div></td><td><div class="td-inner td-title"><div class="tt">Cursor 2.0 ships parallel agents</div></div></td><td><div class="td-inner td-cats"><span class="cat-pill" style="font-size:10px">AI Tools</span></div></td><td><div class="td-inner td-time">18 min ago</div></td><td><div class="td-inner td-actions"><div class="act-row"><div class="btn btn-success" style="height:28px;font-size:12px;padding:0 10px">Publish</div><div class="btn btn-danger" style="height:28px;font-size:12px;padding:0 10px">Reject</div></div></div></td></tr></tbody></table></div>
+            <div style="position:absolute;right:16px;top:60px;display:flex;flex-direction:column;gap:8px;z-index:20;"><div class="toast toast-success"><svg><use href="#i-check-circle"/></svg>"Anthropic interpretability…" published.<div class="toast-x"><svg><use href="#i-x"/></svg></div></div><div class="toast toast-error"><svg><use href="#i-alert"/></svg>Failed to save. Check your connection.<div class="toast-x"><svg><use href="#i-x"/></svg></div></div></div>
+          </div></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Form validation errors</div>
+        <div class="win-wrap" style="height:360px;"><div class="win-chrome"><div class="win-dots"><div class="wd r"></div><div class="wd y"></div><div class="wd g"></div></div><div class="win-title">localhost:3001/stories/xyz-999</div></div>
+          <div class="win-body" style="height:320px;"><div class="sidebar" style="height:320px;"><div class="sb-brand"><div class="sb-logo">Armal Admin</div></div><div class="sb-item active"><svg><use href="#i-inbox"/></svg>Drafts<span class="sb-count">12</span></div><div class="sb-item"><svg><use href="#i-check-circle"/></svg>Published<span class="sb-count">84</span></div></div>
+          <div class="content" style="height:320px;"><div class="content-head"><div class="ch-title">Editing draft</div><div class="ch-actions"><div class="badge badge-draft">Draft</div></div></div>
+            <div style="padding:16px 20px;overflow:hidden;"><div class="val-banner"><svg><use href="#i-alert"/></svg><div>Fix 2 errors before publishing: <strong>Title</strong> is required. <strong>Summary</strong> must be under 280 characters.</div></div><div class="field"><label>Title <span class="req">*</span></label><input type="text" class="error" value="" placeholder="Required" /><div class="field-err"><svg width="12" height="12"><use href="#i-alert"/></svg>Title is required</div></div><div class="field"><label>Short summary <span class="req">*</span></label><input type="text" class="error" value="A new toolkit lets researchers see which features fire inside Claude when it answers a prompt — and edit them. The release is the most permissive of mechanistic interpretability infrastructure to date." /><div class="field-err"><svg width="12" height="12"><use href="#i-alert"/></svg>Must be 280 characters or fewer</div></div><div class="action-bar" style="padding-top:12px;margin-top:8px;"><div class="btn btn-primary" style="opacity:0.5;cursor:not-allowed;"><span class="spinner"></span>Publish</div><div class="btn btn-secondary">Save draft</div></div></div>
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 PUBLISHED -->
+  <section class="surface" id="published">
+    <div class="sh"><span class="sn">04</span><h2>Published stories — /published</h2><span class="sm">Read + re-edit any live story</span></div>
+    <p class="sd">Same table layout as the drafts queue. Status tab switches to Published. Each row shows publish date instead of ingest time. Row actions: Edit (opens detail pane) and a soft Un-publish. Clicking a title opens the detail editor pre-populated with live content.</p>
+    <div class="win-wrap">
+      <div class="win-chrome"><div class="win-dots"><div class="wd r"></div><div class="wd y"></div><div class="wd g"></div></div><div class="win-title">localhost:3001/published — Armal Admin</div></div>
+      <div class="win-body">
+        <div class="sidebar">
+          <div class="sb-brand"><div class="sb-logo">Armal Admin</div><div class="sb-sub">Internal · v0.1</div></div>
+          <div class="sb-section">Content</div>
+          <div class="sb-item"><svg><use href="#i-inbox"/></svg>Drafts<span class="sb-count">12</span></div>
+          <div class="sb-item active"><svg><use href="#i-check-circle"/></svg>Published<span class="sb-count">84</span></div>
+          <div class="sb-item"><svg><use href="#i-x-circle"/></svg>Rejected<span class="sb-count">7</span></div>
+          <div class="sb-section">System</div>
+          <div class="sb-item"><svg><use href="#i-settings"/></svg>Settings</div>
+        </div>
+        <div class="content">
+          <div class="content-head">
+            <div class="ch-title">Published stories <span style="font-weight:400;color:var(--muted);font-size:12px;margin-left:4px;">84 stories</span></div>
+            <div class="ch-actions">
+              <div class="search-input"><svg><use href="#i-search"/></svg><input type="text" placeholder="Search published…" /></div>
+              <div class="status-tabs">
+                <div class="st-tab">Draft <span class="stc" style="background:#f3f4f6;color:var(--muted)">12</span></div>
+                <div class="st-tab active">Published <span class="stc">84</span></div>
+                <div class="st-tab">Rejected <span class="stc" style="background:#f3f4f6;color:var(--muted)">7</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th class="th-img"></th><th>Title / Summary</th><th>Categories</th><th>Published</th><th></th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><div class="td-inner td-thumb"><div class="thumb img-r"></div></div></td>
+                  <td><div class="td-inner td-title"><div class="tt">Meta's new reasoning model beats o3 on three of five benchmark categories</div><div class="ts">The model, codenamed Orion-R, was trained on a chain-of-thought dataset assembled over six months of reinforcement feedback.</div></div></td>
+                  <td><div class="td-inner td-cats"><span class="cat-pill" style="font-size:10px">AI Research</span></div></td>
+                  <td><div class="td-inner td-time" style="color:var(--success)">Today 09:14</div></td>
+                  <td><div class="td-inner td-actions"><div class="act-row"><div class="btn btn-secondary" style="height:28px;font-size:12px;padding:0 10px">Edit</div><div class="btn btn-ghost" style="height:28px;font-size:12px;padding:0 10px;color:var(--muted)">Un-publish</div></div></div></td>
+                </tr>
+                <tr>
+                  <td><div class="td-inner td-thumb"><div class="thumb img-h"></div></div></td>
+                  <td><div class="td-inner td-title"><div class="tt">Stanford medicine trial uses LLM to draft discharge summaries, halving documentation time</div><div class="ts">Clinicians reviewed and signed off on 94% of AI-drafted summaries without edits in the six-week pilot.</div></div></td>
+                  <td><div class="td-inner td-cats"><span class="cat-pill" style="font-size:10px">Healthcare</span></div></td>
+                  <td><div class="td-inner td-time" style="color:var(--success)">Today 08:02</div></td>
+                  <td><div class="td-inner td-actions"><div class="act-row"><div class="btn btn-secondary" style="height:28px;font-size:12px;padding:0 10px">Edit</div><div class="btn btn-ghost" style="height:28px;font-size:12px;padding:0 10px;color:var(--muted)">Un-publish</div></div></div></td>
+                </tr>
+                <tr>
+                  <td><div class="td-inner td-thumb"><div class="thumb img-t"></div></div></td>
+                  <td><div class="td-inner td-title"><div class="tt">Vercel ships AI SDK 4.0 with first-class streaming tool calls and mid-stream cancellation</div><div class="ts">The new SDK adds native support for multi-step agents, including backpressure handling on streamed tool responses.</div></div></td>
+                  <td><div class="td-inner td-cats"><span class="cat-pill" style="font-size:10px">AI Tools</span></div></td>
+                  <td><div class="td-inner td-time">Yesterday</div></td>
+                  <td><div class="td-inner td-actions"><div class="act-row"><div class="btn btn-secondary" style="height:28px;font-size:12px;padding:0 10px">Edit</div><div class="btn btn-ghost" style="height:28px;font-size:12px;padding:0 10px;color:var(--muted)">Un-publish</div></div></div></td>
+                </tr>
+                <tr>
+                  <td><div class="td-inner td-thumb"><div class="thumb img-p"></div></div></td>
+                  <td><div class="td-inner td-title"><div class="tt">UK government publishes AI assurance framework with mandatory incident reporting for frontier models</div><div class="ts">The framework, effective Q3 2026, requires operators of models above 10²⁵ FLOPs to notify the AI Safety Institute within 72 hours of a safety incident.</div></div></td>
+                  <td><div class="td-inner td-cats"><span class="cat-pill" style="font-size:10px">Policy &amp; Safety</span></div></td>
+                  <td><div class="td-inner td-time">Yesterday</div></td>
+                  <td><div class="td-inner td-actions"><div class="act-row"><div class="btn btn-secondary" style="height:28px;font-size:12px;padding:0 10px">Edit</div><div class="btn btn-ghost" style="height:28px;font-size:12px;padding:0 10px;color:var(--muted)">Un-publish</div></div></div></td>
+                </tr>
+                <tr>
+                  <td><div class="td-inner td-thumb"><div class="thumb img-f"></div></div></td>
+                  <td><div class="td-inner td-title"><div class="tt">Michelin-starred kitchen in Tokyo deploys AI sous-chef for prep scheduling and waste prediction</div><div class="ts">The system, built on a fine-tuned Gemini variant, cut daily food waste by 18% over eight weeks.</div></div></td>
+                  <td><div class="td-inner td-cats"><span class="cat-pill" style="font-size:10px">AI in Cooking</span></div></td>
+                  <td><div class="td-inner td-time">2 days ago</div></td>
+                  <td><div class="td-inner td-actions"><div class="act-row"><div class="btn btn-secondary" style="height:28px;font-size:12px;padding:0 10px">Edit</div><div class="btn btn-ghost" style="height:28px;font-size:12px;padding:0 10px;color:var(--muted)">Un-publish</div></div></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 REJECTED -->
+  <section class="surface" id="rejected">
+    <div class="sh"><span class="sn">05</span><h2>Rejected stories — /rejected</h2><span class="sm">Review &amp; optionally restore</span></div>
+    <p class="sd">Same table layout. Row actions: Restore to draft (undoes rejection), or hard Delete. A "rejected reason" column shows a short note if one was entered at rejection time. Muted palette signals these are dormant.</p>
+    <div class="win-wrap">
+      <div class="win-chrome"><div class="win-dots"><div class="wd r"></div><div class="wd y"></div><div class="wd g"></div></div><div class="win-title">localhost:3001/rejected — Armal Admin</div></div>
+      <div class="win-body">
+        <div class="sidebar">
+          <div class="sb-brand"><div class="sb-logo">Armal Admin</div><div class="sb-sub">Internal · v0.1</div></div>
+          <div class="sb-section">Content</div>
+          <div class="sb-item"><svg><use href="#i-inbox"/></svg>Drafts<span class="sb-count">12</span></div>
+          <div class="sb-item"><svg><use href="#i-check-circle"/></svg>Published<span class="sb-count">84</span></div>
+          <div class="sb-item active"><svg><use href="#i-x-circle"/></svg>Rejected<span class="sb-count">7</span></div>
+          <div class="sb-section">System</div>
+          <div class="sb-item"><svg><use href="#i-settings"/></svg>Settings</div>
+        </div>
+        <div class="content">
+          <div class="content-head">
+            <div class="ch-title">Rejected stories <span style="font-weight:400;color:var(--muted);font-size:12px;margin-left:4px;">7 stories</span></div>
+            <div class="ch-actions">
+              <div class="search-input"><svg><use href="#i-search"/></svg><input type="text" placeholder="Search rejected…" /></div>
+              <div class="status-tabs">
+                <div class="st-tab">Draft <span class="stc" style="background:#f3f4f6;color:var(--muted)">12</span></div>
+                <div class="st-tab">Published <span class="stc" style="background:#f3f4f6;color:var(--muted)">84</span></div>
+                <div class="st-tab active">Rejected <span class="stc">7</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th class="th-img"></th><th>Title / Summary</th><th>Reason</th><th>Rejected</th><th></th></tr></thead>
+              <tbody style="opacity:0.82;">
+                <tr>
+                  <td><div class="td-inner td-thumb"><div class="thumb img-t" style="opacity:0.6"></div></div></td>
+                  <td><div class="td-inner td-title"><div class="tt" style="color:var(--muted)">AI startup claims 1000× inference speedup using photonic chips — press release only</div><div class="ts" style="color:var(--subtle)">No peer review, no third-party benchmark. Single vendor source.</div></div></td>
+                  <td><div class="td-inner" style="font-size:11px;color:var(--muted);max-width:140px;">Unverified claim</div></td>
+                  <td><div class="td-inner td-time">2 hr ago</div></td>
+                  <td><div class="td-inner td-actions"><div class="act-row"><div class="btn btn-secondary" style="height:28px;font-size:12px;padding:0 10px">Restore</div><div class="btn btn-ghost" style="height:28px;font-size:12px;padding:0 8px;color:var(--danger)">Delete</div></div></div></td>
+                </tr>
+                <tr>
+                  <td><div class="td-inner td-thumb"><div class="thumb img-p" style="opacity:0.6"></div></div></td>
+                  <td><div class="td-inner td-title"><div class="tt" style="color:var(--muted)">Opinion: AI will replace all knowledge workers within 3 years</div><div class="ts" style="color:var(--subtle)">Speculative op-ed with no sourcing. Not in scope for Armal News.</div></div></td>
+                  <td><div class="td-inner" style="font-size:11px;color:var(--muted);max-width:140px;">Out of scope</div></td>
+                  <td><div class="td-inner td-time">Yesterday</div></td>
+                  <td><div class="td-inner td-actions"><div class="act-row"><div class="btn btn-secondary" style="height:28px;font-size:12px;padding:0 10px">Restore</div><div class="btn btn-ghost" style="height:28px;font-size:12px;padding:0 8px;color:var(--danger)">Delete</div></div></div></td>
+                </tr>
+                <tr>
+                  <td><div class="td-inner td-thumb"><div class="thumb img-r" style="opacity:0.6"></div></div></td>
+                  <td><div class="td-inner td-title"><div class="tt" style="color:var(--muted)">Duplicate: Anthropic interpretability toolkit — second ingest of same story</div><div class="ts" style="color:var(--subtle)">Same story ingested twice from different RSS sources within 4 minutes.</div></div></td>
+                  <td><div class="td-inner" style="font-size:11px;color:var(--muted);max-width:140px;">Duplicate</div></td>
+                  <td><div class="td-inner td-time">3 days ago</div></td>
+                  <td><div class="td-inner td-actions"><div class="act-row"><div class="btn btn-secondary" style="height:28px;font-size:12px;padding:0 10px">Restore</div><div class="btn btn-ghost" style="height:28px;font-size:12px;padding:0 8px;color:var(--danger)">Delete</div></div></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 SETTINGS -->
+  <section class="surface" id="settings">
+    <div class="sh"><span class="sn">06</span><h2>Settings — /settings</h2><span class="sm">Ingestion · Categories · Auth</span></div>
+    <p class="sd">Three grouped settings panels: Ingestion pipeline (RSS sources, poll interval, auto-draft threshold), Category management (reorder / rename the 9 fixed categories), and Auth (admin email, session timeout). Save per-section.</p>
+    <div class="win-wrap">
+      <div class="win-chrome"><div class="win-dots"><div class="wd r"></div><div class="wd y"></div><div class="wd g"></div></div><div class="win-title">localhost:3001/settings — Armal Admin</div></div>
+      <div class="win-body">
+        <div class="sidebar">
+          <div class="sb-brand"><div class="sb-logo">Armal Admin</div><div class="sb-sub">Internal · v0.1</div></div>
+          <div class="sb-section">Content</div>
+          <div class="sb-item"><svg><use href="#i-inbox"/></svg>Drafts<span class="sb-count">12</span></div>
+          <div class="sb-item"><svg><use href="#i-check-circle"/></svg>Published<span class="sb-count">84</span></div>
+          <div class="sb-item"><svg><use href="#i-x-circle"/></svg>Rejected<span class="sb-count">7</span></div>
+          <div class="sb-section">System</div>
+          <div class="sb-item active"><svg><use href="#i-settings"/></svg>Settings</div>
+        </div>
+        <div class="content" style="overflow-y:auto;">
+          <div class="content-head"><div class="ch-title">Settings</div></div>
+          <div style="padding:20px 28px;max-width:680px;overflow-y:auto;height:564px;">
+            <div style="margin-bottom:28px;">
+              <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Ingestion pipeline</div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">RSS sources and ingest behaviour. Changes take effect on the next poll cycle.</div>
+              <div class="field"><label>Poll interval (minutes)</label><input type="text" value="15" style="width:100px;" /></div>
+              <div class="field">
+                <label>RSS / Atom source URLs</label>
+                <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:6px;">
+                  <div style="display:flex;gap:6px;align-items:center;"><input type="text" value="https://feeds.feedburner.com/aidaily" /><div class="btn btn-ghost" style="height:28px;padding:0 8px;color:var(--danger);flex-shrink:0"><svg width="12" height="12"><use href="#i-x"/></svg></div></div>
+                  <div style="display:flex;gap:6px;align-items:center;"><input type="text" value="https://techcrunch.com/tag/artificial-intelligence/feed/" /><div class="btn btn-ghost" style="height:28px;padding:0 8px;color:var(--danger);flex-shrink:0"><svg width="12" height="12"><use href="#i-x"/></svg></div></div>
+                  <div style="display:flex;gap:6px;align-items:center;"><input type="text" value="https://www.theverge.com/ai-artificial-intelligence/rss/index.xml" /><div class="btn btn-ghost" style="height:28px;padding:0 8px;color:var(--danger);flex-shrink:0"><svg width="12" height="12"><use href="#i-x"/></svg></div></div>
+                </div>
+                <div class="btn btn-ghost" style="height:28px;padding:0 8px;border:1px dashed var(--border-strong);color:var(--muted);width:fit-content;"><svg width="11" height="11"><use href="#i-plus"/></svg>&nbsp;Add source</div>
+              </div>
+              <div class="field">
+                <label>Auto-draft threshold</label>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:4px;"><input type="text" value="0.72" style="width:80px;" /><span style="font-size:12px;color:var(--muted)">Stories with AI confidence score ≥ this value are auto-drafted. Below → discarded.</span></div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:4px;"><div class="btn btn-secondary">Save ingestion settings</div><div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--success)"><svg width="13" height="13"><use href="#i-check"/></svg>Saved</div></div>
+            </div>
+            <div class="divider"></div>
+            <div style="margin-bottom:28px;">
+              <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Categories</div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Rename categories or reorder their display position. Slug is auto-derived from the name and cannot be edited directly.</div>
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <div style="display:grid;grid-template-columns:24px 1fr 120px;gap:8px;align-items:center;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;"><span style="color:var(--subtle);font-size:12px;text-align:center;cursor:grab">⋮⋮</span><input type="text" value="AI in Tech" style="font-size:12px;height:28px;" /><span style="font-family:var(--mono);font-size:11px;color:var(--subtle)">ai-in-tech</span></div>
+                <div style="display:grid;grid-template-columns:24px 1fr 120px;gap:8px;align-items:center;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;"><span style="color:var(--subtle);font-size:12px;text-align:center;cursor:grab">⋮⋮</span><input type="text" value="AI in Finance" style="font-size:12px;height:28px;" /><span style="font-family:var(--mono);font-size:11px;color:var(--subtle)">ai-in-finance</span></div>
+                <div style="display:grid;grid-template-columns:24px 1fr 120px;gap:8px;align-items:center;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;"><span style="color:var(--subtle);font-size:12px;text-align:center;cursor:grab">⋮⋮</span><input type="text" value="AI in Healthcare" style="font-size:12px;height:28px;" /><span style="font-family:var(--mono);font-size:11px;color:var(--subtle)">ai-in-healthcare</span></div>
+                <div style="display:grid;grid-template-columns:24px 1fr 120px;gap:8px;align-items:center;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;"><span style="color:var(--subtle);font-size:12px;text-align:center;cursor:grab">⋮⋮</span><input type="text" value="AI in Robotics" style="font-size:12px;height:28px;" /><span style="font-family:var(--mono);font-size:11px;color:var(--subtle)">ai-in-robotics</span></div>
+                <div style="display:grid;grid-template-columns:24px 1fr 120px;gap:8px;align-items:center;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;"><span style="color:var(--subtle);font-size:12px;text-align:center;cursor:grab">⋮⋮</span><input type="text" value="AI Research &amp; Models" style="font-size:12px;height:28px;" /><span style="font-family:var(--mono);font-size:11px;color:var(--subtle)">ai-research</span></div>
+                <div style="display:grid;grid-template-columns:24px 1fr 120px;gap:8px;align-items:center;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;"><span style="color:var(--subtle);font-size:12px;text-align:center;cursor:grab">⋮⋮</span><input type="text" value="AI Tools &amp; Products" style="font-size:12px;height:28px;" /><span style="font-family:var(--mono);font-size:11px;color:var(--subtle)">ai-tools</span></div>
+                <div style="display:grid;grid-template-columns:24px 1fr 120px;gap:8px;align-items:center;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;"><span style="color:var(--subtle);font-size:12px;text-align:center;cursor:grab">⋮⋮</span><input type="text" value="AI Policy &amp; Safety" style="font-size:12px;height:28px;" /><span style="font-family:var(--mono);font-size:11px;color:var(--subtle)">ai-policy</span></div>
+                <div style="display:grid;grid-template-columns:24px 1fr 120px;gap:8px;align-items:center;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;"><span style="color:var(--subtle);font-size:12px;text-align:center;cursor:grab">⋮⋮</span><input type="text" value="AI in Education" style="font-size:12px;height:28px;" /><span style="font-family:var(--mono);font-size:11px;color:var(--subtle)">ai-in-education</span></div>
+                <div style="display:grid;grid-template-columns:24px 1fr 120px;gap:8px;align-items:center;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;"><span style="color:var(--subtle);font-size:12px;text-align:center;cursor:grab">⋮⋮</span><input type="text" value="AI in Cooking" style="font-size:12px;height:28px;" /><span style="font-family:var(--mono);font-size:11px;color:var(--subtle)">ai-in-cooking</span></div>
+              </div>
+              <div style="margin-top:10px;"><div class="btn btn-secondary">Save categories</div></div>
+            </div>
+            <div class="divider"></div>
+            <div style="margin-bottom:8px;">
+              <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Auth</div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Admin access is Tailscale-gated. These settings are for the session behaviour within that perimeter.</div>
+              <div class="field"><label>Admin email</label><input type="text" value="admin@armal.news" style="width:260px;" /></div>
+              <div class="field"><label>Session timeout (minutes)</label><input type="text" value="480" style="width:100px;" /><div class="field-hint">Set to 0 for no timeout while on Tailscale.</div></div>
+              <div style="display:flex;gap:8px;margin-top:4px;"><div class="btn btn-secondary">Save auth settings</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div>Armal News · admin dashboard · v1</div>
+    <div>Desktop only · Tailscale · light mode</div>
+  </footer>
+</main>
+</body>
+</html>

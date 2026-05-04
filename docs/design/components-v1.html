@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Armal News — Components & Tokens v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* ── Page chrome ── */
+    --page-bg: #EBE5DA; --page-fg: #3D3929; --page-muted: #6B5F4D;
+    --page-border: #E0D8C7; --page-accent: #CC785C;
+    --display: 'Newsreader', Georgia, serif;
+    --body: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  }
+
+  /* ── Light theme swatch ── */
+  .th-light {
+    --bg: #F5F0E8; --surface: #EFEAE0; --fg: #3D3929; --muted: #6B5F4D;
+    --accent: #CC785C; --border: #E0D8C7; --backdrop: rgba(20,16,8,0.42);
+    --shadow-card: 0 10px 28px -16px rgba(40,30,15,0.30), 0 1px 0 rgba(40,30,15,0.04);
+    --shadow-sheet: 0 -16px 40px -20px rgba(20,16,8,0.45);
+    --shadow-drop: 0 4px 20px -8px rgba(40,30,15,0.22), 0 0 0 1px rgba(40,30,15,0.08);
+  }
+  /* ── Dark theme swatch ── */
+  .th-dark {
+    --bg: #262624; --surface: #1E1E1C; --fg: #E8E1D4; --muted: #A89E8B;
+    --accent: #DA7756; --border: #3A3733; --backdrop: rgba(0,0,0,0.55);
+    --shadow-card: 0 10px 28px -16px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.18);
+    --shadow-sheet: 0 -16px 40px -20px rgba(0,0,0,0.7);
+    --shadow-drop: 0 4px 20px -8px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--page-bg); color: var(--page-fg); font-family: var(--body); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  .page { max-width: 1520px; margin: 0 auto; padding: 64px 48px 120px; }
+
+  /* ── Spec chrome ── */
+  .topbar { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 40px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--page-muted); }
+  .topbar a { color: var(--page-muted); text-decoration: none; }
+  .topbar a:hover { color: var(--page-accent); }
+  header.masthead { border-bottom: 1px solid var(--page-border); padding-bottom: 36px; margin-bottom: 56px; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 32px; }
+  .masthead-left .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--page-muted); margin-bottom: 10px; }
+  .masthead-left h1 { font-family: var(--display); font-weight: 500; font-size: 48px; line-height: 1.05; letter-spacing: -0.012em; }
+  .masthead-left h1 em { font-style: italic; color: var(--page-accent); }
+  .masthead-left p { margin: 18px 0 0; color: var(--page-muted); font-size: 15px; max-width: 560px; line-height: 1.6; }
+  .legend { display: grid; grid-template-columns: repeat(2, auto); gap: 8px 18px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--page-muted); border-left: 1px solid var(--page-border); padding-left: 32px; }
+  .legend .swatch { display: inline-block; width: 10px; height: 10px; margin-right: 8px; vertical-align: -1px; border-radius: 2px; border: 1px solid var(--page-border); }
+  section.surface { margin-bottom: 88px; }
+  section.surface > .sh { border-bottom: 1px dashed var(--page-border); padding-bottom: 12px; margin-bottom: 28px; display: flex; align-items: baseline; gap: 16px; }
+  section.surface > .sh .sn { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--page-accent); }
+  section.surface > .sh h2 { font-family: var(--display); font-weight: 500; font-size: 30px; letter-spacing: -0.01em; }
+  section.surface > .sh .sm { font-family: var(--mono); font-size: 11px; color: var(--page-muted); letter-spacing: 0.08em; margin-left: auto; }
+  section.surface > .sd { font-size: 14px; color: var(--page-muted); margin-bottom: 24px; max-width: 680px; line-height: 1.6; }
+  footer.foot { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--page-border); display: flex; justify-content: space-between; color: var(--page-muted); font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; }
+
+  /* ── Canvas pair (light + dark side by side) ── */
+  .canvas-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .canvas { border-radius: 12px; border: 1px solid; padding: 28px 24px; }
+  .th-light.canvas { background: var(--bg); border-color: var(--border); }
+  .th-dark.canvas { background: var(--bg); border-color: var(--border); }
+  .canvas-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 20px; }
+
+  /* ── Group row inside canvas ── */
+  .grp { margin-bottom: 20px; }
+  .grp:last-child { margin-bottom: 0; }
+  .grp-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; opacity: 0.7; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .col { display: flex; flex-direction: column; gap: 8px; }
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  /* ═══════════════════════════════════════════
+     COMPONENTS — defined inside .th-light / .th-dark so they inherit tokens
+  ═══════════════════════════════════════════ */
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 0 16px; height: 40px; border-radius: 999px; font-family: var(--body); font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid transparent; white-space: nowrap; transition: opacity 0.12s; }
+  .btn svg { width: 14px; height: 14px; }
+  .btn-sm { height: 32px; padding: 0 12px; font-size: 13px; }
+  .btn-lg { height: 52px; padding: 0 24px; font-size: 16px; }
+  .btn-primary { background: var(--accent); color: #FBF7EF; border-color: var(--accent); }
+  .btn-secondary { background: var(--surface); color: var(--fg); border-color: var(--border); }
+  .btn-ghost { background: transparent; color: var(--muted); border-color: transparent; }
+  .btn-danger { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+  .btn-success { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+  .btn:disabled, .btn.disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn.loading { opacity: 0.75; cursor: wait; }
+  .spinner { width: 14px; height: 14px; border: 2px solid rgba(251,247,239,0.35); border-top-color: #FBF7EF; border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Badge / Status pill */
+  .badge { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px; font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid; }
+  .badge-accent { background: var(--accent); color: #FBF7EF; border-color: var(--accent); }
+  .badge-muted { background: transparent; color: var(--muted); border-color: var(--border); }
+  .badge-success { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+  .badge-warn { background: #fffbeb; color: #d97706; border-color: #fde68a; }
+  .badge-danger { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+
+  /* Category pill */
+  .cat-pill { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); font-family: var(--body); font-size: 12px; font-weight: 500; color: var(--fg); }
+  .cat-pill svg { width: 14px; height: 14px; color: var(--muted); }
+  .cat-pill.active { background: var(--accent); color: #FBF7EF; border-color: var(--accent); }
+  .cat-pill.active svg { color: #FBF7EF; }
+  .cat-pill.dismissible { padding-right: 4px; }
+  .cat-pill .x { width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,0.10); display: inline-flex; align-items: center; justify-content: center; }
+  .cat-pill.active .x { background: rgba(0,0,0,0.15); }
+  .cat-pill .x svg { width: 10px; height: 10px; color: #FBF7EF; }
+
+  /* Tag chip */
+  .tag-chip { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 4px; background: var(--surface); border: 1px solid var(--border); font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .tag-chip .tc-x { width: 13px; height: 13px; border-radius: 50%; background: var(--border); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+  .tag-chip .tc-x svg { width: 8px; height: 8px; stroke-width: 2.5; }
+
+  /* Headline overlay card (feed) */
+  .headline-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px; box-shadow: var(--shadow-card); }
+  .headline-card h3 { font-family: var(--display); font-weight: 600; font-size: 22px; line-height: 1.18; letter-spacing: -0.005em; color: var(--fg); text-wrap: balance; }
+
+  /* Summary panel */
+  .summary-panel { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px; }
+  .summary-panel p { font-family: var(--display); font-style: italic; font-weight: 400; font-size: 17px; line-height: 1.45; color: var(--fg); text-wrap: pretty; text-align: center; }
+  .summary-panel .tap-cta { text-align: right; margin-top: 10px; font-size: 12px; color: var(--muted); }
+
+  /* Pull quote */
+  .pull-quote { border-left: 2px solid var(--accent); padding: 4px 0 4px 16px; font-family: var(--display); font-style: italic; font-size: 17px; line-height: 1.4; color: var(--fg); }
+
+  /* Sheet row */
+  .sheet-row { display: flex; align-items: center; gap: 14px; height: 52px; padding: 0 16px; border-top: 1px solid var(--border); }
+  .sheet-row:first-child { border-top: none; }
+  .sheet-row .ic { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+  .sheet-row .ic svg { width: 20px; height: 20px; }
+  .sheet-row .name { flex: 1; font-size: 15px; font-weight: 500; color: var(--fg); }
+  .sheet-row .check { width: 18px; height: 18px; color: var(--accent); }
+  .sheet-row .check svg { width: 16px; height: 16px; stroke-width: 2.5; }
+  .sheet-row.active .ic, .sheet-row.active .name { color: var(--accent); }
+  .sheet-rows-wrap { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); }
+
+  /* Drawer header */
+  .drawer-header { display: flex; flex-direction: column; align-items: center; padding: 8px 0 12px; background: var(--surface); border-bottom: 1px solid var(--border); border-radius: 12px 12px 0 0; }
+  .drawer-handle { width: 36px; height: 4px; border-radius: 999px; background: var(--muted); opacity: 0.4; margin-bottom: 10px; }
+  .drawer-header .title { font-family: var(--display); font-weight: 500; font-size: 17px; color: var(--fg); letter-spacing: -0.005em; }
+
+  /* Table row (admin style) */
+  .tbl-row { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 10px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+  .tbl-row.selected { background: color-mix(in oklch, var(--surface) 40%, var(--accent) 12%); border-color: color-mix(in oklch, var(--border) 50%, var(--accent) 50%); }
+  .tbl-thumb { width: 40px; height: 40px; border-radius: 6px; background: #2E3D6E; }
+  .tbl-meta .tbl-title { font-size: 13px; font-weight: 600; color: var(--fg); line-height: 1.3; }
+  .tbl-meta .tbl-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .tbl-acts { display: flex; gap: 6px; }
+  .tbl-act { height: 28px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); font-size: 12px; font-weight: 500; color: var(--fg); display: inline-flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap; }
+  .tbl-act svg { width: 12px; height: 12px; }
+  .tbl-act.success { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+  .tbl-act.danger { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+
+  /* Theme toggle */
+  .theme-toggle { display: inline-flex; align-items: center; gap: 0; border: 1px solid var(--border); border-radius: 999px; padding: 3px; background: var(--surface); }
+  .tt-opt { width: 30px; height: 30px; border-radius: 999px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--muted); }
+  .tt-opt.active { background: var(--bg); box-shadow: 0 1px 3px rgba(0,0,0,0.12); color: var(--fg); }
+  .tt-opt svg { width: 15px; height: 15px; }
+
+  /* Install banner */
+  .install-banner { display: flex; align-items: center; gap: 14px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-drop); }
+  .ib-icon { width: 44px; height: 44px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: var(--display); font-style: italic; font-weight: 600; font-size: 28px; color: var(--accent); flex-shrink: 0; }
+  .ib-text { flex: 1; }
+  .ib-text strong { font-size: 13px; font-weight: 600; color: var(--fg); display: block; }
+  .ib-text span { font-size: 12px; color: var(--muted); }
+  .ib-cta { height: 34px; padding: 0 14px; border-radius: 999px; background: var(--accent); color: #FBF7EF; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; white-space: nowrap; }
+  .ib-dismiss { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: center; color: var(--muted); cursor: pointer; flex-shrink: 0; }
+  .ib-dismiss svg { width: 12px; height: 12px; }
+
+  /* Eyebrow / mono metadata */
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+
+  /* ── Token table ── */
+  .token-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .token-table th { text-align: left; padding: 8px 12px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--page-muted); border-bottom: 1px solid var(--page-border); font-weight: 600; }
+  .token-table td { padding: 9px 12px; border-bottom: 1px solid var(--page-border); vertical-align: middle; }
+  .token-table tr:last-child td { border-bottom: none; }
+  .token-table tr:hover td { background: rgba(0,0,0,0.02); }
+  .tok-name { font-family: var(--mono); font-size: 12px; color: var(--page-fg); }
+  .tok-val { font-family: var(--mono); font-size: 11px; color: var(--page-muted); }
+  .tok-swatch { width: 20px; height: 20px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.08); display: inline-block; vertical-align: middle; }
+  .tok-desc { font-size: 12px; color: var(--page-muted); }
+  .tok-group { padding: 14px 12px 4px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--page-accent); background: #F3EDE0; border-bottom: 1px solid var(--page-border); }
+
+  .tw-pill { display: inline-block; background: rgba(204,120,92,0.12); color: var(--page-accent); border-radius: 4px; font-family: var(--mono); font-size: 10px; padding: 1px 6px; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></symbol>
+  <symbol id="i-microscope" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8M3 22h18M14 22a7 7 0 1 0 0-14h-1M9 14h2M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2ZM12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/></symbol>
+  <symbol id="i-wrench" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
+</defs></svg>
+
+<main class="page">
+  <div class="topbar">
+    <a href="armal-news-design-index.html">← Back to surface index</a>
+    <span>05 / Components &amp; Tokens · v1</span>
+  </div>
+  <header class="masthead">
+    <div class="masthead-left">
+      <div class="eyebrow">Surface 05 · Design System</div>
+      <h1>Armal News — <em>components &amp; tokens</em></h1>
+      <p>Every reusable component across both themes. Two sheets: component catalog (light + dark) and token reference. Tailwind-ready CSS variable names throughout.</p>
+    </div>
+    <div class="legend">
+      <span><span class="swatch" style="background:#F5F0E8"></span>Light</span>
+      <span><span class="swatch" style="background:#262624"></span>Dark</span>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════════
+       01 · BUTTONS
+  ══════════════════════════════════════════════ -->
+  <section class="surface" id="buttons">
+    <div class="sh"><span class="sn">01</span><h2>Buttons</h2><span class="sm">5 variants · 3 sizes · 4 states</span></div>
+    <p class="sd">All buttons use <code style="font-family:var(--mono);font-size:12px">border-radius: 999px</code>. Primary uses <code style="font-family:var(--mono);font-size:12px">var(--accent)</code>; all others derive from surface/fg tokens so they automatically adapt to dark mode.</p>
+    <div class="canvas-pair">
+      <div class="canvas th-light">
+        <div class="canvas-label">Light</div>
+        <div class="grp"><div class="grp-label">Variants · default</div>
+          <div class="row">
+            <button class="btn btn-primary">Continue</button>
+            <button class="btn btn-secondary">Save changes</button>
+            <button class="btn btn-ghost">Cancel</button>
+            <button class="btn btn-success"><svg><use href="#i-check"/></svg>Publish</button>
+            <button class="btn btn-danger"><svg><use href="#i-x"/></svg>Reject</button>
+          </div>
+        </div>
+        <hr class="divider">
+        <div class="grp"><div class="grp-label">Sizes</div>
+          <div class="row" style="align-items:flex-end">
+            <button class="btn btn-primary btn-sm">Small</button>
+            <button class="btn btn-primary">Default</button>
+            <button class="btn btn-primary btn-lg">Large</button>
+          </div>
+        </div>
+        <hr class="divider">
+        <div class="grp"><div class="grp-label">States</div>
+          <div class="row">
+            <button class="btn btn-primary">Default</button>
+            <button class="btn btn-primary" style="opacity:0.75;cursor:default">Hover</button>
+            <button class="btn btn-primary loading"><span class="spinner"></span>Saving…</button>
+            <button class="btn btn-primary disabled" disabled>Disabled</button>
+          </div>
+        </div>
+      </div>
+      <div class="canvas th-dark">
+        <div class="canvas-label" style="color:var(--muted)">Dark</div>
+        <div class="grp"><div class="grp-label">Variants · default</div>
+          <div class="row">
+            <button class="btn btn-primary">Continue</button>
+            <button class="btn btn-secondary">Save changes</button>
+            <button class="btn btn-ghost">Cancel</button>
+            <button class="btn btn-success"><svg><use href="#i-check"/></svg>Publish</button>
+            <button class="btn btn-danger"><svg><use href="#i-x"/></svg>Reject</button>
+          </div>
+        </div>
+        <hr class="divider">
+        <div class="grp"><div class="grp-label">Sizes</div>
+          <div class="row" style="align-items:flex-end">
+            <button class="btn btn-primary btn-sm">Small</button>
+            <button class="btn btn-primary">Default</button>
+            <button class="btn btn-primary btn-lg">Large</button>
+          </div>
+        </div>
+        <hr class="divider">
+        <div class="grp"><div class="grp-label">States</div>
+          <div class="row">
+            <button class="btn btn-primary">Default</button>
+            <button class="btn btn-primary" style="opacity:0.75;cursor:default">Hover</button>
+            <button class="btn btn-primary loading"><span class="spinner"></span>Saving…</button>
+            <button class="btn btn-primary disabled" disabled>Disabled</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       02 · BADGES & STATUS
+  ══════════════════════════════════════════════ -->
+  <section class="surface" id="badges">
+    <div class="sh"><span class="sn">02</span><h2>Badges &amp; status pills</h2><span class="sm">Published · draft · rejected · ready · next</span></div>
+    <p class="sd">Monospace uppercase labels. The Ready/accent variant uses <code style="font-family:var(--mono);font-size:12px">var(--accent)</code> fill; others are semantic colors hardcoded (semantic colors don't need dark-mode inversion here).</p>
+    <div class="canvas-pair">
+      <div class="canvas th-light">
+        <div class="canvas-label">Light</div>
+        <div class="row">
+          <span class="badge badge-accent">Ready</span>
+          <span class="badge badge-muted">Next</span>
+          <span class="badge badge-success">Published</span>
+          <span class="badge badge-warn">Draft</span>
+          <span class="badge badge-danger">Rejected</span>
+        </div>
+      </div>
+      <div class="canvas th-dark">
+        <div class="canvas-label" style="color:var(--muted)">Dark</div>
+        <div class="row">
+          <span class="badge badge-accent">Ready</span>
+          <span class="badge badge-muted">Next</span>
+          <span class="badge badge-success">Published</span>
+          <span class="badge badge-warn">Draft</span>
+          <span class="badge badge-danger">Rejected</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       03 · CATEGORY PILL
+  ══════════════════════════════════════════════ -->
+  <section class="surface" id="cat-pill">
+    <div class="sh"><span class="sn">03</span><h2>Category pill</h2><span class="sm">Default · active · dismissible</span></div>
+    <p class="sd">Used in the mobile filter overlay (dismissible active state), the bottom sheet, the desktop dropdown, and the feed header. The ✕ target is 28×28px minimum.</p>
+    <div class="canvas-pair">
+      <div class="canvas th-light">
+        <div class="canvas-label">Light</div>
+        <div class="row">
+          <span class="cat-pill"><svg><use href="#i-microscope"/></svg>AI Research</span>
+          <span class="cat-pill active"><svg><use href="#i-cpu"/></svg>AI in Tech</span>
+          <span class="cat-pill active dismissible"><svg><use href="#i-wrench"/></svg>AI Tools<span class="x"><svg><use href="#i-x"/></svg></span></span>
+        </div>
+      </div>
+      <div class="canvas th-dark">
+        <div class="canvas-label" style="color:var(--muted)">Dark</div>
+        <div class="row">
+          <span class="cat-pill"><svg><use href="#i-microscope"/></svg>AI Research</span>
+          <span class="cat-pill active"><svg><use href="#i-cpu"/></svg>AI in Tech</span>
+          <span class="cat-pill active dismissible"><svg><use href="#i-wrench"/></svg>AI Tools<span class="x"><svg><use href="#i-x"/></svg></span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       04 · TAG CHIP
+  ══════════════════════════════════════════════ -->
+  <section class="surface" id="tag-chip">
+    <div class="sh"><span class="sn">04</span><h2>Tag chip</h2><span class="sm">Mono · removable</span></div>
+    <p class="sd">Used in the draft detail editor and on the deep-dive article view. Monospace text, 4px radius (utility feel). ✕ button is always present when in edit context.</p>
+    <div class="canvas-pair">
+      <div class="canvas th-light">
+        <div class="canvas-label">Light</div>
+        <div class="row">
+          <span class="tag-chip">#interpretability<span class="tc-x"><svg><use href="#i-x"/></svg></span></span>
+          <span class="tag-chip">#mechanistic<span class="tc-x"><svg><use href="#i-x"/></svg></span></span>
+          <span class="tag-chip">#open-source<span class="tc-x"><svg><use href="#i-x"/></svg></span></span>
+        </div>
+      </div>
+      <div class="canvas th-dark">
+        <div class="canvas-label" style="color:var(--muted)">Dark</div>
+        <div class="row">
+          <span class="tag-chip">#interpretability<span class="tc-x"><svg><use href="#i-x"/></svg></span></span>
+          <span class="tag-chip">#mechanistic<span class="tc-x"><svg><use href="#i-x"/></svg></span></span>
+          <span class="tag-chip">#open-source<span class="tc-x"><svg><use href="#i-x"/></svg></span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       05 · HEADLINE OVERLAY & SUMMARY PANEL
+  ══════════════════════════════════════════════ -->
+  <section class="surface" id="feed-components">
+    <div class="sh"><span class="sn">05</span><h2>Headline overlay &amp; summary panel</h2><span class="sm">Feed card · two halves</span></div>
+    <p class="sd">The headline card straddles the image/surface boundary at 50% (transformed –50%). The summary panel is the lower half of the feed card — <code style="font-family:var(--mono);font-size:12px">var(--bg)</code> background for contrast against the <code style="font-family:var(--mono);font-size:12px">var(--surface)</code> headline tile.</p>
+    <div class="canvas-pair">
+      <div class="canvas th-light">
+        <div class="canvas-label">Light</div>
+        <div class="col">
+          <div class="headline-card">
+            <h3>Anthropic open-sources interpretability tools for tracing model internals</h3>
+          </div>
+          <div class="summary-panel">
+            <p>"A new toolkit lets researchers see which features fire inside Claude when it answers a prompt — and edit them."</p>
+            <div class="tap-cta">Tap to read →</div>
+          </div>
+        </div>
+      </div>
+      <div class="canvas th-dark">
+        <div class="canvas-label" style="color:var(--muted)">Dark</div>
+        <div class="col">
+          <div class="headline-card">
+            <h3>Anthropic open-sources interpretability tools for tracing model internals</h3>
+          </div>
+          <div class="summary-panel">
+            <p>"A new toolkit lets researchers see which features fire inside Claude when it answers a prompt — and edit them."</p>
+            <div class="tap-cta">Tap to read →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       06 · PULL QUOTE
+  ══════════════════════════════════════════════ -->
+  <section class="surface" id="pull-quote">
+    <div class="sh"><span class="sn">06</span><h2>Pull quote</h2><span class="sm">Deep-dive article · 2px accent rule</span></div>
+    <p class="sd">Left-border rule in <code style="font-family:var(--mono);font-size:12px">var(--accent)</code>. Italic Newsreader at 17–20px. Used at most once per article page.</p>
+    <div class="canvas-pair">
+      <div class="canvas th-light">
+        <div class="canvas-label">Light</div>
+        <div class="pull-quote">"We're not shipping interpretability for the frontier model on day zero. We're shipping it for a model close enough that the research transfers."</div>
+      </div>
+      <div class="canvas th-dark">
+        <div class="canvas-label" style="color:var(--muted)">Dark</div>
+        <div class="pull-quote">"We're not shipping interpretability for the frontier model on day zero. We're shipping it for a model close enough that the research transfers."</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       07 · DRAWER HEADER & SHEET ROWS
+  ══════════════════════════════════════════════ -->
+  <section class="surface" id="sheet">
+    <div class="sh"><span class="sn">07</span><h2>Drawer header &amp; sheet rows</h2><span class="sm">Category bottom sheet · 56px touch targets</span></div>
+    <p class="sd">Handle bar is 36×4px at 0.4 opacity. Rows are 52px tall (≥ 44px touch target). Active row colors both icon and label to <code style="font-family:var(--mono);font-size:12px">var(--accent)</code>.</p>
+    <div class="canvas-pair">
+      <div class="canvas th-light" style="padding:0">
+        <div class="canvas-label" style="padding:16px 24px 0">Light</div>
+        <div class="drawer-header">
+          <div class="drawer-handle"></div>
+          <div class="title">Categories</div>
+        </div>
+        <div class="sheet-rows-wrap" style="border-radius:0 0 12px 12px;border-top:none">
+          <div class="sheet-row"><span class="ic"><svg><use href="#i-microscope"/></svg></span><span class="name">AI Research &amp; Models</span><span class="check"><svg><use href="#i-check"/></svg></span></div>
+          <div class="sheet-row active"><span class="ic"><svg><use href="#i-cpu"/></svg></span><span class="name">AI in Tech</span><span class="check"><svg><use href="#i-check"/></svg></span></div>
+          <div class="sheet-row"><span class="ic"><svg><use href="#i-wrench"/></svg></span><span class="name">AI Tools &amp; Products</span><span class="check" style="opacity:0"><svg><use href="#i-check"/></svg></span></div>
+          <div class="sheet-row"><span class="ic"><svg><use href="#i-shield"/></svg></span><span class="name">AI Policy &amp; Safety</span><span class="check" style="opacity:0"><svg><use href="#i-check"/></svg></span></div>
+        </div>
+      </div>
+      <div class="canvas th-dark" style="padding:0">
+        <div class="canvas-label" style="padding:16px 24px 0;color:var(--muted)">Dark</div>
+        <div class="drawer-header">
+          <div class="drawer-handle"></div>
+          <div class="title">Categories</div>
+        </div>
+        <div class="sheet-rows-wrap" style="border-radius:0 0 12px 12px;border-top:none">
+          <div class="sheet-row"><span class="ic"><svg><use href="#i-microscope"/></svg></span><span class="name">AI Research &amp; Models</span><span class="check"><svg><use href="#i-check"/></svg></span></div>
+          <div class="sheet-row active"><span class="ic"><svg><use href="#i-cpu"/></svg></span><span class="name">AI in Tech</span><span class="check"><svg><use href="#i-check"/></svg></span></div>
+          <div class="sheet-row"><span class="ic"><svg><use href="#i-wrench"/></svg></span><span class="name">AI Tools &amp; Products</span><span class="check" style="opacity:0"><svg><use href="#i-check"/></svg></span></div>
+          <div class="sheet-row"><span class="ic"><svg><use href="#i-shield"/></svg></span><span class="name">AI Policy &amp; Safety</span><span class="check" style="opacity:0"><svg><use href="#i-check"/></svg></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       08 · ADMIN TABLE ROW
+  ══════════════════════════════════════════════ -->
+  <section class="surface" id="table-row">
+    <div class="sh"><span class="sn">08</span><h2>Admin table row</h2><span class="sm">Default · selected · with actions</span></div>
+    <p class="sd">Used in the admin dashboard drafts queue. Selected state uses <code style="font-family:var(--mono);font-size:12px">color-mix()</code> to tint without hardcoding values. Admin is light-only — dark variant shown for completeness of token coverage.</p>
+    <div class="canvas-pair">
+      <div class="canvas th-light">
+        <div class="canvas-label">Light</div>
+        <div class="col">
+          <div class="tbl-row">
+            <div class="tbl-thumb"></div>
+            <div class="tbl-meta"><div class="tbl-title">Anthropic open-sources interpretability tools</div><div class="tbl-sub">AI Research &amp; Models · 2 min ago</div></div>
+            <div class="tbl-acts"><div class="tbl-act success"><svg><use href="#i-check"/></svg>Publish</div><div class="tbl-act danger"><svg><use href="#i-x"/></svg>Reject</div></div>
+          </div>
+          <div class="tbl-row selected">
+            <div class="tbl-thumb"></div>
+            <div class="tbl-meta"><div class="tbl-title">Cursor 2.0 ships parallel agents and a 'pause' key</div><div class="tbl-sub">AI Tools &amp; Products · 18 min ago</div></div>
+            <div class="tbl-acts"><div class="tbl-act success"><svg><use href="#i-check"/></svg>Publish</div><div class="tbl-act danger"><svg><use href="#i-x"/></svg>Reject</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="canvas th-dark">
+        <div class="canvas-label" style="color:var(--muted)">Dark (token preview)</div>
+        <div class="col">
+          <div class="tbl-row">
+            <div class="tbl-thumb"></div>
+            <div class="tbl-meta"><div class="tbl-title">Anthropic open-sources interpretability tools</div><div class="tbl-sub">AI Research &amp; Models · 2 min ago</div></div>
+            <div class="tbl-acts"><div class="tbl-act success"><svg><use href="#i-check"/></svg>Publish</div><div class="tbl-act danger"><svg><use href="#i-x"/></svg>Reject</div></div>
+          </div>
+          <div class="tbl-row selected">
+            <div class="tbl-thumb"></div>
+            <div class="tbl-meta"><div class="tbl-title">Cursor 2.0 ships parallel agents and a 'pause' key</div><div class="tbl-sub">AI Tools &amp; Products · 18 min ago</div></div>
+            <div class="tbl-acts"><div class="tbl-act success"><svg><use href="#i-check"/></svg>Publish</div><div class="tbl-act danger"><svg><use href="#i-x"/></svg>Reject</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       09 · THEME TOGGLE & INSTALL BANNER
+  ══════════════════════════════════════════════ -->
+  <section class="surface" id="misc">
+    <div class="sh"><span class="sn">09</span><h2>Theme toggle &amp; install banner</h2><span class="sm">Desktop header · PWA prompt</span></div>
+    <p class="sd">The theme toggle uses the icon-only pill pattern. The install banner is used in the desktop PWA and marketing page — icon, one-line pitch, CTA, and a dismiss ✕.</p>
+    <div class="canvas-pair">
+      <div class="canvas th-light">
+        <div class="canvas-label">Light</div>
+        <div class="col">
+          <div class="grp-label">Theme toggle</div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <div class="theme-toggle">
+              <div class="tt-opt active"><svg><use href="#i-sun"/></svg></div>
+              <div class="tt-opt"><svg><use href="#i-moon"/></svg></div>
+            </div>
+            <div class="theme-toggle">
+              <div class="tt-opt"><svg><use href="#i-sun"/></svg></div>
+              <div class="tt-opt active"><svg><use href="#i-moon"/></svg></div>
+            </div>
+          </div>
+          <hr class="divider">
+          <div class="grp-label">Install banner</div>
+          <div class="install-banner">
+            <div class="ib-icon">A</div>
+            <div class="ib-text"><strong>Install Armal News</strong><span>Add to your dock — no browser chrome.</span></div>
+            <div class="ib-cta">Install</div>
+            <div class="ib-dismiss"><svg><use href="#i-x"/></svg></div>
+          </div>
+        </div>
+      </div>
+      <div class="canvas th-dark">
+        <div class="canvas-label" style="color:var(--muted)">Dark</div>
+        <div class="col">
+          <div class="grp-label">Theme toggle</div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <div class="theme-toggle">
+              <div class="tt-opt active"><svg><use href="#i-sun"/></svg></div>
+              <div class="tt-opt"><svg><use href="#i-moon"/></svg></div>
+            </div>
+            <div class="theme-toggle">
+              <div class="tt-opt"><svg><use href="#i-sun"/></svg></div>
+              <div class="tt-opt active"><svg><use href="#i-moon"/></svg></div>
+            </div>
+          </div>
+          <hr class="divider">
+          <div class="grp-label">Install banner</div>
+          <div class="install-banner">
+            <div class="ib-icon">A</div>
+            <div class="ib-text"><strong>Install Armal News</strong><span>Add to your dock — no browser chrome.</span></div>
+            <div class="ib-cta">Install</div>
+            <div class="ib-dismiss"><svg><use href="#i-x"/></svg></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       10 · TOKEN TABLE
+  ══════════════════════════════════════════════ -->
+  <section class="surface" id="tokens">
+    <div class="sh"><span class="sn">10</span><h2>Token reference</h2><span class="sm">CSS variables · Tailwind mapping</span></div>
+    <p class="sd">All tokens are CSS custom properties on <code style="font-family:var(--mono);font-size:12px">:root</code> (global) with theme overrides on <code style="font-family:var(--mono);font-size:12px">.theme-light</code> / <code style="font-family:var(--mono);font-size:12px">.theme-dark</code> for the spec, and on <code style="font-family:var(--mono);font-size:12px">@media (prefers-color-scheme: dark)</code> for the live pages.</p>
+
+    <table class="token-table">
+      <thead><tr><th>Token</th><th>Light value</th><th>Dark value</th><th>Tailwind key</th><th>Usage</th></tr></thead>
+      <tbody>
+        <tr><td colspan="5" class="tok-group">Color — Background</td></tr>
+        <tr>
+          <td class="tok-name">--bg</td>
+          <td><span class="tok-swatch" style="background:#F5F0E8"></span> <span class="tok-val">oklch(97% 0.018 70)</span></td>
+          <td><span class="tok-swatch" style="background:#262624"></span> <span class="tok-val">oklch(16% 0.012 80)</span></td>
+          <td><span class="tw-pill">bg-bg</span></td>
+          <td class="tok-desc">Page background, summary panel</td>
+        </tr>
+        <tr>
+          <td class="tok-name">--surface</td>
+          <td><span class="tok-swatch" style="background:#EFEAE0"></span> <span class="tok-val">oklch(94% 0.016 70)</span></td>
+          <td><span class="tok-swatch" style="background:#1E1E1C"></span> <span class="tok-val">oklch(13% 0.010 80)</span></td>
+          <td><span class="tw-pill">bg-surface</span></td>
+          <td class="tok-desc">Cards, sheets, sidebar</td>
+        </tr>
+        <tr><td colspan="5" class="tok-group">Color — Foreground</td></tr>
+        <tr>
+          <td class="tok-name">--fg</td>
+          <td><span class="tok-swatch" style="background:#3D3929"></span> <span class="tok-val">oklch(25% 0.022 70)</span></td>
+          <td><span class="tok-swatch" style="background:#E8E1D4"></span> <span class="tok-val">oklch(91% 0.014 75)</span></td>
+          <td><span class="tw-pill">text-fg</span></td>
+          <td class="tok-desc">Primary text, headings</td>
+        </tr>
+        <tr>
+          <td class="tok-name">--muted</td>
+          <td><span class="tok-swatch" style="background:#6B5F4D"></span> <span class="tok-val">oklch(44% 0.020 65)</span></td>
+          <td><span class="tok-swatch" style="background:#A89E8B"></span> <span class="tok-val">oklch(66% 0.016 70)</span></td>
+          <td><span class="tw-pill">text-muted</span></td>
+          <td class="tok-desc">Secondary text, captions, meta</td>
+        </tr>
+        <tr><td colspan="5" class="tok-group">Color — Accent</td></tr>
+        <tr>
+          <td class="tok-name">--accent</td>
+          <td><span class="tok-swatch" style="background:#CC785C"></span> <span class="tok-val">oklch(58% 0.13 35)</span></td>
+          <td><span class="tok-swatch" style="background:#DA7756"></span> <span class="tok-val">oklch(62% 0.14 35)</span></td>
+          <td><span class="tw-pill">text-accent</span> <span class="tw-pill">bg-accent</span></td>
+          <td class="tok-desc">Primary CTA, pull-quote rule, active states. Used ≤ 2× per screen.</td>
+        </tr>
+        <tr><td colspan="5" class="tok-group">Color — Border</td></tr>
+        <tr>
+          <td class="tok-name">--border</td>
+          <td><span class="tok-swatch" style="background:#E0D8C7"></span> <span class="tok-val">oklch(87% 0.014 70)</span></td>
+          <td><span class="tok-swatch" style="background:#3A3733"></span> <span class="tok-val">oklch(24% 0.012 70)</span></td>
+          <td><span class="tw-pill">border-border</span></td>
+          <td class="tok-desc">All hairline borders, dividers</td>
+        </tr>
+        <tr><td colspan="5" class="tok-group">Typography</td></tr>
+        <tr>
+          <td class="tok-name">--display</td>
+          <td colspan="2" class="tok-val">'Newsreader', Georgia, serif</td>
+          <td><span class="tw-pill">font-display</span></td>
+          <td class="tok-desc">Headlines, wordmark, pull quotes, summaries. Min 22px on mobile.</td>
+        </tr>
+        <tr>
+          <td class="tok-name">--body</td>
+          <td colspan="2" class="tok-val">'Inter', -apple-system, system-ui, sans-serif</td>
+          <td><span class="tw-pill">font-body</span></td>
+          <td class="tok-desc">UI labels, body copy, buttons</td>
+        </tr>
+        <tr>
+          <td class="tok-name">--mono</td>
+          <td colspan="2" class="tok-val">'JetBrains Mono', ui-monospace, Menlo, monospace</td>
+          <td><span class="tw-pill">font-mono</span></td>
+          <td class="tok-desc">Eyebrows, category codes, timestamps, admin IDs</td>
+        </tr>
+        <tr><td colspan="5" class="tok-group">Radii</td></tr>
+        <tr>
+          <td class="tok-name">--r-card</td>
+          <td colspan="2" class="tok-val">12px</td>
+          <td><span class="tw-pill">rounded-card</span></td>
+          <td class="tok-desc">Feed headline tile, story cards</td>
+        </tr>
+        <tr>
+          <td class="tok-name">--r-sheet</td>
+          <td colspan="2" class="tok-val">16px</td>
+          <td><span class="tw-pill">rounded-sheet</span></td>
+          <td class="tok-desc">Bottom sheet top corners</td>
+        </tr>
+        <tr>
+          <td class="tok-name">--r-pill</td>
+          <td colspan="2" class="tok-val">999px</td>
+          <td><span class="tw-pill">rounded-full</span></td>
+          <td class="tok-desc">All pill-shaped buttons, category pills, badges</td>
+        </tr>
+        <tr><td colspan="5" class="tok-group">Shadow</td></tr>
+        <tr>
+          <td class="tok-name">--shadow-card</td>
+          <td colspan="2" class="tok-val">0 10px 28px -16px (warm/dark at 30–55%), 0 1px border</td>
+          <td><span class="tw-pill">shadow-card</span></td>
+          <td class="tok-desc">Headline overlay tile, feed card</td>
+        </tr>
+        <tr>
+          <td class="tok-name">--shadow-sheet</td>
+          <td colspan="2" class="tok-val">0 -16px 40px -20px (upward, bottom sheet)</td>
+          <td><span class="tw-pill">shadow-sheet</span></td>
+          <td class="tok-desc">Bottom sheet lift</td>
+        </tr>
+        <tr>
+          <td class="tok-name">--shadow-drop</td>
+          <td colspan="2" class="tok-val">0 4px 20px -8px + 1px ring</td>
+          <td><span class="tw-pill">shadow-drop</span></td>
+          <td class="tok-desc">Dropdowns, install banner, popovers</td>
+        </tr>
+        <tr><td colspan="5" class="tok-group">Accent budget rule</td></tr>
+        <tr>
+          <td colspan="5" class="tok-desc" style="padding:12px;">
+            <strong style="color:var(--page-fg)">One accent, used at most twice per screen.</strong> Acceptable uses: primary CTA button fill, pull-quote left-rule, active category pill background, eyebrow category dot, Publish action in admin. Never gradient the accent. Never use it as a background on large surfaces.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer class="foot">
+    <div>Armal News · components &amp; tokens · v1</div>
+    <div>9 components · 1 token table · light + dark</div>
+  </footer>
+</main>
+</body>
+</html>
