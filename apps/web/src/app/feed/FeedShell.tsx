@@ -129,7 +129,9 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
     (slug: string | null) => {
       setMenuOpen(false);
       const target = slug ? `/?category=${slug}` : "/";
-      router.replace(target, { scroll: false });
+      // router.replace can stall on query-only changes in dev; use push so
+      // the segment definitely re-fetches with the new searchParams.
+      router.push(target, { scroll: false });
       scrollToTop();
     },
     [router, scrollToTop],
