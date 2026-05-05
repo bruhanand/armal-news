@@ -125,17 +125,24 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
     }
   }, []);
 
+  // Imperative navigation — used by ⌥C and the dismiss ✕ pill on the active
+  // filter trigger. Menu picks navigate via Link (next/link) directly.
   const setFilter = useCallback(
     (slug: string | null) => {
       setMenuOpen(false);
       const target = slug ? `/?category=${slug}` : "/";
-      // router.replace can stall on query-only changes in dev; use push so
-      // the segment definitely re-fetches with the new searchParams.
       router.push(target, { scroll: false });
       scrollToTop();
     },
     [router, scrollToTop],
   );
+
+  // Called by CategoryMenu after a Link in the menu is clicked — closes the
+  // menu and scrolls to top. The href on the Link does the actual navigation.
+  const onMenuPicked = useCallback(() => {
+    setMenuOpen(false);
+    scrollToTop();
+  }, [scrollToTop]);
 
   // Desktop-only keyboard shortcuts. Listener is registered iff the
   // (min-width: 768px) media query matches at mount time — mobile UAs have
@@ -277,7 +284,7 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
               variant="dropdown"
               categories={categories}
               activeSlug={activeSlug}
-              onPick={setFilter}
+              onPicked={onMenuPicked}
               onClose={() => setMenuOpen(false)}
               anchorRef={desktopAnchorRef}
             />
@@ -388,7 +395,7 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
             variant="sheet"
             categories={categories}
             activeSlug={activeSlug}
-            onPick={setFilter}
+            onPicked={onMenuPicked}
             onClose={() => setMenuOpen(false)}
           />
         </div>

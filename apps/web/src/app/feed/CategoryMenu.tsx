@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Link from "next/link";
 import { CategoryIcon, CheckIcon } from "./icons";
 
 export type CategoryOption = { slug: string; name: string };
@@ -8,19 +9,27 @@ export type CategoryOption = { slug: string; name: string };
 type Props = {
   categories: CategoryOption[];
   activeSlug: string | null;
-  onPick: (slug: string | null) => void;
   onClose: () => void;
+  // Called after the user picks (or clears) a category. The menu doesn't do
+  // the navigation itself — Row uses next/link with an href, so navigation
+  // is the browser's job. The shell uses this hook to reset its own state
+  // (close the menu, scroll to top) on a successful pick.
+  onPicked: () => void;
   variant: "dropdown" | "sheet";
   // When variant === "dropdown" this is the anchor button rect — used to
   // position the popover; the sheet variant ignores it.
   anchorRef?: React.RefObject<HTMLButtonElement | null>;
 };
 
+function hrefFor(slug: string | null): string {
+  return slug ? `/?category=${slug}` : "/";
+}
+
 export function CategoryMenu({
   categories,
   activeSlug,
-  onPick,
   onClose,
+  onPicked,
   variant,
   anchorRef,
 }: Props) {
@@ -61,7 +70,8 @@ export function CategoryMenu({
           name="All stories"
           active={activeSlug === null}
           italic
-          onPick={() => onPick(null)}
+          href={hrefFor(null)}
+          onPicked={onPicked}
         />
         <div className="my-1 h-px bg-border" />
         {categories.map((c) => (
@@ -71,7 +81,8 @@ export function CategoryMenu({
             slug={c.slug}
             name={c.name}
             active={activeSlug === c.slug}
-            onPick={() => onPick(c.slug)}
+            href={hrefFor(c.slug)}
+            onPicked={onPicked}
           />
         ))}
       </div>
@@ -103,7 +114,8 @@ export function CategoryMenu({
             name="All stories"
             active={activeSlug === null}
             italic
-            onPick={() => onPick(null)}
+            href={hrefFor(null)}
+            onPicked={onPicked}
           />
           {categories.map((c) => (
             <Row
@@ -112,7 +124,8 @@ export function CategoryMenu({
               slug={c.slug}
               name={c.name}
               active={activeSlug === c.slug}
-              onPick={() => onPick(c.slug)}
+              href={hrefFor(c.slug)}
+              onPicked={onPicked}
             />
           ))}
         </div>
@@ -130,7 +143,6 @@ const ROW_STYLE = {
     italic: "italic opacity-75",
     check: "ml-auto text-accent",
     checkSize: "h-4 w-4",
-    role: "menuitemradio" as const,
   },
   sheet: {
     button: "flex h-14 w-full items-center gap-4 border-t border-border px-6 text-left first:border-t-0",
@@ -140,7 +152,6 @@ const ROW_STYLE = {
     italic: "italic opacity-85",
     check: "text-accent",
     checkSize: "h-[18px] w-[18px]",
-    role: undefined,
   },
 };
 
@@ -150,22 +161,25 @@ function Row({
   name,
   active,
   italic,
-  onPick,
+  href,
+  onPicked,
 }: {
   variant: "dropdown" | "sheet";
   slug?: string;
   name: string;
   active: boolean;
   italic?: boolean;
-  onPick: () => void;
+  href: string;
+  onPicked: () => void;
 }) {
   const s = ROW_STYLE[variant];
   return (
-    <button
-      type="button"
-      role={s.role}
-      aria-checked={s.role ? active : undefined}
-      onClick={onPick}
+    <Link
+      href={href}
+      replace
+      scroll={false}
+      onClick={onPicked}
+      aria-current={active ? "page" : undefined}
       className={`${s.button} ${active ? "text-accent" : "text-fg"}`}
     >
       <span className={`${s.iconWrap} ${active ? "text-accent" : "text-muted"}`}>
@@ -175,6 +189,6 @@ function Row({
       <span className={`${s.check} ${active ? "opacity-100" : "opacity-0"}`}>
         <CheckIcon className={s.checkSize} />
       </span>
-    </button>
+    </Link>
   );
 }
