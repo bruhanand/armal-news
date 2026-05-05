@@ -4,17 +4,13 @@
 // Cursor format is `<publishedAt-iso>__<storyId-uuid>` — see parseCursor in
 // @armal/shared/db/queries. Malformed cursors return 400 here.
 import { NextResponse } from "next/server";
-import {
-  listPublishedStories,
-  parseCursor,
-  primaryCategoryByStoryIds,
-} from "@armal/shared/db/queries";
+import { parseCursor } from "@armal/shared/db/queries";
 import { isCategorySlug } from "@armal/shared/constants/categories";
 import {
   FEED_PAGE_LIMIT,
   FEED_PAGE_LIMIT_MAX,
-  toFeedItem,
 } from "@/app/feed/feedItem";
+import { fetchFeedPage } from "@/app/feed/fetchFeedPage";
 
 export const dynamic = "force-dynamic";
 
@@ -54,14 +50,6 @@ export async function GET(req: Request) {
     limit = parsed;
   }
 
-  // Sequential — primaryCategoryByStoryIds depends on the ids returned by
-  // listPublishedStories; can't parallelise.
-  const { items: stories, nextCursor } = await listPublishedStories({
-    category,
-    cursor,
-    limit,
-  });
-  const primary = await primaryCategoryByStoryIds(stories.map((s) => s.id));
-  const items = stories.map((s) => toFeedItem(s, primary.get(s.id)));
-  return NextResponse.json({ items, nextCursor });
+  const page = await fetchFeedPage({ category, cursor, limit });
+  return NextResponse.json(page);
 }

@@ -1,11 +1,8 @@
-import {
-  listCategories,
-  listPublishedStories,
-  primaryCategoryByStoryIds,
-} from "@armal/shared/db/queries";
+import { listCategories } from "@armal/shared/db/queries";
 import { isCategorySlug } from "@armal/shared/constants/categories";
 import { FeedShell } from "./feed/FeedShell";
-import { FEED_PAGE_LIMIT, toFeedItem } from "./feed/feedItem";
+import { FEED_PAGE_LIMIT } from "./feed/feedItem";
+import { fetchFeedPage } from "./feed/fetchFeedPage";
 
 export const dynamic = "force-dynamic";
 
@@ -21,23 +18,21 @@ export default async function HomePage({
   const activeSlug =
     requested && isCategorySlug(requested) ? requested : null;
 
-  // SSR page-1 uses the same limit as /api/feed pages so the cadence is
-  // uniform — pagination doesn't appear to "speed up" after the first scroll.
   const [allCategories, page1] = await Promise.all([
     listCategories(),
-    listPublishedStories({
+    fetchFeedPage({
       category: activeSlug ?? undefined,
       limit: FEED_PAGE_LIMIT,
     }),
   ]);
-  // Sequential — primaryCategoryByStoryIds depends on the ids returned above.
-  const primary = await primaryCategoryByStoryIds(page1.items.map((s) => s.id));
-  const items = page1.items.map((s) => toFeedItem(s, primary.get(s.id)));
 
   return (
     <main className="min-h-screen bg-bg text-fg">
       <FeedShell
-        initial={{ items, nextCursor: page1.nextCursor }}
+        // key on the active filter so React remounts the shell when the
+        // filter changes — paginated state resets cleanly without an effect.
+        key={activeSlug ?? "__all__"}
+        initial={page1}
         categories={allCategories.map((c) => ({ slug: c.slug, name: c.name }))}
         activeSlug={activeSlug}
       />

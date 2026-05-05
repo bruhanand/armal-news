@@ -21,6 +21,7 @@ import {
 } from "./icons";
 import { CategoryMenu, type CategoryOption } from "./CategoryMenu";
 import { ShortcutsModal } from "./ShortcutsModal";
+import { matchFeedShortcut, type ShortcutAction } from "./shortcuts";
 
 // One DOM tree, two CSS surfaces. The mobile snap container and the desktop
 // grid container coexist in markup; Tailwind's `md:` breakpoint hides one or
@@ -38,21 +39,21 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
   const router = useRouter();
   const [items, setItems] = useState<FeedItem[]>(initial.items);
   const [nextCursor, setNextCursor] = useState<string | null>(initial.nextCursor);
-  const [loading, setLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
   const mobileScrollRef = useRef<HTMLDivElement | null>(null);
   const desktopScrollRef = useRef<HTMLDivElement | null>(null);
-  // One sentinel per surface — both render at every breakpoint, but the
-  // hidden one is `display: none` and never intersects, so a single observer
-  // watching both still fires only on whichever surface is visible.
   const desktopSentinelRef = useRef<HTMLDivElement | null>(null);
   const mobileSentinelRef = useRef<HTMLDivElement | null>(null);
   const inFlightRef = useRef(false);
   const desktopAnchorRef = useRef<HTMLButtonElement | null>(null);
-  // Refs that track open state for the keyboard listener so the effect
-  // doesn't tear down + re-add on every menu / modal toggle.
+  // Cached focused-card index for j/k navigation. null means "find from DOM
+  // on next keypress" — refreshed only when stale, so rapid j/k presses skip
+  // the per-card getBoundingClientRect reflow loop.
+  const focusedIndexRef = useRef<number | null>(null);
+  // Open state mirrored to refs so the global keydown listener stays mounted
+  // across menu / modal toggles instead of tearing down on every flip.
   const menuOpenRef = useRef(false);
   const shortcutsOpenRef = useRef(false);
   useEffect(() => {
@@ -67,48 +68,53 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
     [categories, activeSlug],
   );
 
-  // Reset internal state if the parent reloads with a different filter.
-  useEffect(() => {
-    setItems(initial.items);
-    setNextCursor(initial.nextCursor);
-  }, [initial.items, initial.nextCursor]);
-
-  // Cursor pagination: IntersectionObserver near the end of the loaded set.
+  // Cursor pagination — one IntersectionObserver per surface. Mobile snaps
+  // inside its own scroll container, so its IO needs that container as the
+  // `root`; viewport-rooted observation never fires there. Desktop scrolls
+  // the page, so its IO uses the default viewport root.
   useEffect(() => {
     if (!nextCursor) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          if (inFlightRef.current) return;
-          inFlightRef.current = true;
-          setLoading(true);
-          const params = new URLSearchParams();
-          if (activeSlug) params.set("category", activeSlug);
-          params.set("cursor", nextCursor);
-          fetch(`/api/feed?${params.toString()}`)
-            .then((r) => r.json())
-            .then(
-              (data: { items: FeedItem[]; nextCursor: string | null }) => {
-                setItems((prev) => {
-                  const seen = new Set(prev.map((p) => p.id));
-                  const fresh = data.items.filter((it) => !seen.has(it.id));
-                  return [...prev, ...fresh];
-                });
-                setNextCursor(data.nextCursor);
-              },
-            )
-            .finally(() => {
-              inFlightRef.current = false;
-              setLoading(false);
+    const cursor = nextCursor;
+    function onIntersect(entries: IntersectionObserverEntry[]) {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        if (inFlightRef.current) return;
+        inFlightRef.current = true;
+        const params = new URLSearchParams();
+        if (activeSlug) params.set("category", activeSlug);
+        params.set("cursor", cursor);
+        fetch(`/api/feed?${params.toString()}`)
+          .then((r) => r.json())
+          .then((data: { items: FeedItem[]; nextCursor: string | null }) => {
+            setItems((prev) => {
+              const seen = new Set(prev.map((p) => p.id));
+              const fresh = data.items.filter((it) => !seen.has(it.id));
+              return [...prev, ...fresh];
             });
-        }
-      },
-      { rootMargin: "400px 0px" },
-    );
-    if (desktopSentinelRef.current) observer.observe(desktopSentinelRef.current);
-    if (mobileSentinelRef.current) observer.observe(mobileSentinelRef.current);
-    return () => observer.disconnect();
+            setNextCursor(data.nextCursor);
+          })
+          .finally(() => {
+            inFlightRef.current = false;
+          });
+      }
+    }
+    const observers: IntersectionObserver[] = [];
+    if (desktopSentinelRef.current) {
+      const io = new IntersectionObserver(onIntersect, {
+        rootMargin: "400px 0px",
+      });
+      io.observe(desktopSentinelRef.current);
+      observers.push(io);
+    }
+    if (mobileSentinelRef.current && mobileScrollRef.current) {
+      const io = new IntersectionObserver(onIntersect, {
+        root: mobileScrollRef.current,
+        rootMargin: "400px 0px",
+      });
+      io.observe(mobileSentinelRef.current);
+      observers.push(io);
+    }
+    return () => observers.forEach((io) => io.disconnect());
   }, [nextCursor, activeSlug]);
 
   const scrollToTop = useCallback(() => {
@@ -124,33 +130,35 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
       setMenuOpen(false);
       const target = slug ? `/?category=${slug}` : "/";
       router.replace(target, { scroll: false });
-      // The Server Component above will refetch and re-hydrate `initial`;
-      // the useEffect on `initial` resets state. Scroll-to-top is immediate.
       scrollToTop();
     },
     [router, scrollToTop],
   );
 
-  // Desktop keyboard shortcuts. Only registered on ≥768px (no keyboard on
-  // mobile). The current "focused" card is the one closest to the viewport
-  // center of the desktop scroll container.
+  // Desktop-only keyboard shortcuts. Listener is registered iff the
+  // (min-width: 768px) media query matches at mount time — mobile UAs have
+  // no physical keyboard.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!window.matchMedia("(min-width: 768px)").matches) return;
 
-    function findFocusedIndex(): number {
+    function getCards(): NodeListOf<HTMLAnchorElement> | null {
       const root = desktopScrollRef.current;
-      if (!root) return 0;
-      const cards = root.querySelectorAll<HTMLElement>("[data-card-index]");
-      if (cards.length === 0) return 0;
-      const rootRect = root.getBoundingClientRect();
-      const center = rootRect.top + rootRect.height / 2;
+      return root
+        ? root.querySelectorAll<HTMLAnchorElement>("a[data-card-index]")
+        : null;
+    }
+
+    function findIndexFromDom(cards: NodeListOf<HTMLAnchorElement>): number {
+      const root = desktopScrollRef.current;
+      if (!root || cards.length === 0) return 0;
+      const center =
+        root.getBoundingClientRect().top + root.clientHeight / 2;
       let best = 0;
       let bestDist = Infinity;
       cards.forEach((el, i) => {
         const r = el.getBoundingClientRect();
-        const c = r.top + r.height / 2;
-        const d = Math.abs(c - center);
+        const d = Math.abs(r.top + r.height / 2 - center);
         if (d < bestDist) {
           bestDist = d;
           best = i;
@@ -159,82 +167,64 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
       return best;
     }
 
-    function moveFocus(delta: number) {
-      const root = desktopScrollRef.current;
-      if (!root) return;
-      const cards = root.querySelectorAll<HTMLElement>("[data-card-index]");
-      if (cards.length === 0) return;
-      const next = Math.max(
-        0,
-        Math.min(cards.length - 1, findFocusedIndex() + delta),
-      );
-      cards[next]?.scrollIntoView({ behavior: "smooth", block: "center" });
+    function focusedIndex(cards: NodeListOf<HTMLAnchorElement>): number {
+      const cached = focusedIndexRef.current;
+      if (cached != null && cached < cards.length) return cached;
+      const idx = findIndexFromDom(cards);
+      focusedIndexRef.current = idx;
+      return idx;
     }
 
-    function handler(e: KeyboardEvent) {
-      // Don't hijack typing inside form fields.
-      const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) {
-        return;
-      }
-      // Modifier matching: alt = ⌥; ignore ctrl/meta combos so we don't
-      // collide with browser shortcuts.
-      if (e.ctrlKey || e.metaKey) return;
-
-      if (e.altKey && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setShortcutsOpen((s) => !s);
-        return;
-      }
-      if (e.altKey && e.key.toLowerCase() === "c") {
-        e.preventDefault();
-        setFilter(null);
-        return;
-      }
-      // ⌥↵ source link belongs to /story/[slug]; not active on /. Punted to
-      // deep-dive owner — see slice 0007 brief.
-      if (e.altKey) return;
-
-      if (e.key === "Escape") {
+    const ACTIONS: Record<ShortcutAction, () => void> = {
+      next: () => {
+        const cards = getCards();
+        if (!cards || cards.length === 0) return;
+        const next = Math.min(cards.length - 1, focusedIndex(cards) + 1);
+        focusedIndexRef.current = next;
+        cards[next]?.scrollIntoView({ behavior: "smooth", block: "center" });
+      },
+      prev: () => {
+        const cards = getCards();
+        if (!cards || cards.length === 0) return;
+        const next = Math.max(0, focusedIndex(cards) - 1);
+        focusedIndexRef.current = next;
+        cards[next]?.scrollIntoView({ behavior: "smooth", block: "center" });
+      },
+      open: () => {
+        const cards = getCards();
+        if (!cards || cards.length === 0) return;
+        cards[focusedIndex(cards)]?.click();
+      },
+      close: () => {
         if (shortcutsOpenRef.current) setShortcutsOpen(false);
         else if (menuOpenRef.current) setMenuOpen(false);
+      },
+      categories: () => setMenuOpen((m) => !m),
+      clearFilter: () => setFilter(null),
+      panel: () => setShortcutsOpen((s) => !s),
+      // ⌥↵ is documented in the modal but only acts on /story/[slug] —
+      // intentionally a no-op on the feed.
+      viewSource: () => {},
+    };
+
+    function handler(e: KeyboardEvent) {
+      const t = e.target as HTMLElement | null;
+      if (
+        t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.isContentEditable)
+      ) {
         return;
       }
-      if (e.key === "j" || e.key === "J" || e.key === "ArrowDown") {
-        e.preventDefault();
-        moveFocus(1);
-        return;
-      }
-      if (e.key === "k" || e.key === "K" || e.key === "ArrowUp") {
-        e.preventDefault();
-        moveFocus(-1);
-        return;
-      }
-      if (e.key === "Enter" || e.key === " ") {
-        const root = desktopScrollRef.current;
-        if (!root) return;
-        const cards = root.querySelectorAll<HTMLAnchorElement>(
-          "a[data-card-index]",
-        );
-        const target = cards[findFocusedIndex()];
-        if (target) {
-          e.preventDefault();
-          target.click();
-        }
-        return;
-      }
-      if (e.key === "c" || e.key === "C") {
-        e.preventDefault();
-        setMenuOpen((m) => !m);
-        return;
-      }
+      const action = matchFeedShortcut(e);
+      if (!action) return;
+      e.preventDefault();
+      ACTIONS[action]();
     }
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-    // setFilter is stable (useCallback over [router, scrollToTop]); menu /
-    // modal open state is read via refs above so the listener can stay
-    // mounted across toggles.
   }, [setFilter]);
 
   return (
@@ -343,11 +333,6 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
             </div>
             {nextCursor && (
               <div ref={desktopSentinelRef} className="h-12" aria-hidden />
-            )}
-            {loading && (
-              <p className="pt-3 text-center font-mono text-[11px] text-muted">
-                Loading…
-              </p>
             )}
           </div>
         )}
@@ -482,7 +467,9 @@ function MobileCard({
         tabIndex={-1}
       />
 
-      {/* Image fills the top half. */}
+      {/* Image fills the top half. Plain <img> rather than next/image: the
+       * snap container fights next/image's intrinsic-aspect / fill modes,
+       * and CDN delivery already gives us optimised renditions. */}
       <div className="relative h-1/2 w-full overflow-hidden bg-[#2B3960]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -523,17 +510,16 @@ function MobileCard({
             </button>
           </div>
         ) : (
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-20 grid grid-cols-[1fr_auto_1fr] items-center px-4 pt-14 text-[#FBF7EF]">
-            <span className="inline-flex opacity-55">
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-4 pt-14 text-[#FBF7EF]">
+            <span className="absolute left-4 top-14 inline-flex opacity-55">
               <CategoryIcon
                 slug={item.primaryCategorySlug}
                 className="h-6 w-6"
               />
             </span>
-            <span className="font-display text-[15px] font-medium uppercase italic tracking-[0.06em] opacity-60">
+            <span className="block text-center font-display text-[15px] font-medium uppercase italic tracking-[0.06em] opacity-60">
               Armal News
             </span>
-            <span />
           </div>
         )}
       </div>

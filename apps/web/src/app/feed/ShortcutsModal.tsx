@@ -2,17 +2,7 @@
 
 import { useEffect } from "react";
 import { XIcon } from "./icons";
-
-const ROWS: Array<{ label: string; keys: string[] }> = [
-  { label: "Next story", keys: ["J", "↓"] },
-  { label: "Previous story", keys: ["K", "↑"] },
-  { label: "Open article", keys: ["↵", "Space"] },
-  { label: "Close / back", keys: ["Esc"] },
-  { label: "Open categories", keys: ["C"] },
-  { label: "Clear filter", keys: ["⌥", "C"] },
-  { label: "View source", keys: ["⌥", "↵"] },
-  { label: "This panel", keys: ["⌥", "K"] },
-];
+import { SHORTCUTS } from "./shortcuts";
 
 export function ShortcutsModal({ onClose }: { onClose: () => void }) {
   useEffect(() => {
@@ -47,9 +37,9 @@ export function ShortcutsModal({ onClose }: { onClose: () => void }) {
           Keyboard shortcuts
         </h3>
         <div>
-          {ROWS.map((row, i) => (
+          {SHORTCUTS.map((row, i) => (
             <div
-              key={row.label}
+              key={row.action}
               className={`flex items-center justify-between py-2.5 text-sm text-muted ${
                 i === 0 ? "" : "border-t border-border"
               }`}

@@ -57,6 +57,7 @@ export function CategoryMenu({
         className="absolute left-1/2 top-[60px] z-50 w-[264px] -translate-x-1/2 overflow-hidden rounded-card border border-border bg-surface py-1.5 shadow-drop"
       >
         <Row
+          variant="dropdown"
           name="All stories"
           active={activeSlug === null}
           italic
@@ -66,6 +67,7 @@ export function CategoryMenu({
         {categories.map((c) => (
           <Row
             key={c.slug}
+            variant="dropdown"
             slug={c.slug}
             name={c.name}
             active={activeSlug === c.slug}
@@ -76,7 +78,6 @@ export function CategoryMenu({
     );
   }
 
-  // Bottom sheet (mobile).
   return (
     <div
       role="dialog"
@@ -97,15 +98,17 @@ export function CategoryMenu({
           Categories
         </div>
         <div className="overflow-y-auto pb-6 pt-2">
-          <SheetRow
+          <Row
+            variant="sheet"
             name="All stories"
             active={activeSlug === null}
             italic
             onPick={() => onPick(null)}
           />
           {categories.map((c) => (
-            <SheetRow
+            <Row
               key={c.slug}
+              variant="sheet"
               slug={c.slug}
               name={c.name}
               active={activeSlug === c.slug}
@@ -118,77 +121,59 @@ export function CategoryMenu({
   );
 }
 
-function Row({
-  slug,
-  name,
-  active,
-  italic,
-  onPick,
-}: {
-  slug?: string;
-  name: string;
-  active: boolean;
-  italic?: boolean;
-  onPick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="menuitemradio"
-      aria-checked={active}
-      onClick={onPick}
-      className={`flex h-[42px] w-full items-center gap-2.5 px-3.5 text-left text-sm font-medium hover:bg-bg ${
-        active ? "text-accent" : "text-fg"
-      }`}
-    >
-      <span
-        className={`inline-flex h-[18px] w-[18px] items-center justify-center ${
-          active ? "text-accent" : "text-muted"
-        }`}
-      >
-        <CategoryIcon slug={slug ?? null} className="h-[18px] w-[18px]" />
-      </span>
-      <span className={italic ? "italic opacity-75" : ""}>{name}</span>
-      <span className={`ml-auto text-accent ${active ? "opacity-100" : "opacity-0"}`}>
-        <CheckIcon className="h-4 w-4" />
-      </span>
-    </button>
-  );
-}
+const ROW_STYLE = {
+  dropdown: {
+    button: "flex h-[42px] w-full items-center gap-2.5 px-3.5 text-left text-sm font-medium hover:bg-bg",
+    iconWrap: "inline-flex h-[18px] w-[18px] items-center justify-center",
+    iconSize: "h-[18px] w-[18px]",
+    label: "",
+    italic: "italic opacity-75",
+    check: "ml-auto text-accent",
+    checkSize: "h-4 w-4",
+    role: "menuitemradio" as const,
+  },
+  sheet: {
+    button: "flex h-14 w-full items-center gap-4 border-t border-border px-6 text-left first:border-t-0",
+    iconWrap: "inline-flex h-7 w-7 items-center justify-center",
+    iconSize: "h-[22px] w-[22px]",
+    label: "flex-1 text-base font-medium",
+    italic: "italic opacity-85",
+    check: "text-accent",
+    checkSize: "h-[18px] w-[18px]",
+    role: undefined,
+  },
+};
 
-function SheetRow({
+function Row({
+  variant,
   slug,
   name,
   active,
   italic,
   onPick,
 }: {
+  variant: "dropdown" | "sheet";
   slug?: string;
   name: string;
   active: boolean;
   italic?: boolean;
   onPick: () => void;
 }) {
+  const s = ROW_STYLE[variant];
   return (
     <button
       type="button"
+      role={s.role}
+      aria-checked={s.role ? active : undefined}
       onClick={onPick}
-      className={`flex h-14 w-full items-center gap-4 border-t border-border px-6 text-left first:border-t-0 ${
-        active ? "text-accent" : "text-fg"
-      }`}
+      className={`${s.button} ${active ? "text-accent" : "text-fg"}`}
     >
-      <span
-        className={`inline-flex h-7 w-7 items-center justify-center ${
-          active ? "text-accent" : "text-muted"
-        }`}
-      >
-        <CategoryIcon slug={slug ?? null} className="h-[22px] w-[22px]" />
+      <span className={`${s.iconWrap} ${active ? "text-accent" : "text-muted"}`}>
+        <CategoryIcon slug={slug ?? null} className={s.iconSize} />
       </span>
-      <span className={`flex-1 text-base font-medium ${italic ? "italic opacity-85" : ""}`}>
-        {name}
-      </span>
-      <span className={`text-accent ${active ? "opacity-100" : "opacity-0"}`}>
-        <CheckIcon className="h-[18px] w-[18px]" />
+      <span className={`${s.label} ${italic ? s.italic : ""}`}>{name}</span>
+      <span className={`${s.check} ${active ? "opacity-100" : "opacity-0"}`}>
+        <CheckIcon className={s.checkSize} />
       </span>
     </button>
   );

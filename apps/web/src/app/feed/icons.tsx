@@ -1,7 +1,8 @@
-// Inline SVGs from the design pack (docs/design/components-v1.html). Per
-// category icon is keyed by CATEGORIES[].iconKey so the data layer keeps a
-// single source of truth on slug→key mapping.
+// Inline SVGs from the design pack (docs/design/components-v1.html).
+// Per-category icons are looked up via CATEGORIES[].iconKey — that field
+// exists on the shared categories constant for exactly this consumer.
 import type { JSX } from "react";
+import { CATEGORIES } from "@armal/shared/constants/categories";
 
 type IconProps = { className?: string };
 
@@ -86,18 +87,6 @@ const CategoryIcons: Record<string, (p: IconProps) => JSX.Element> = {
   ),
 };
 
-const ICON_BY_SLUG: Record<string, string> = {
-  "ai-in-tech": "tech",
-  "ai-in-finance": "finance",
-  "ai-in-healthcare": "healthcare",
-  "ai-in-robotics": "robotics",
-  "ai-in-cooking": "cooking",
-  "ai-in-education": "education",
-  "ai-research": "research",
-  "ai-tools": "tools",
-  "ai-policy-safety": "policy",
-};
-
 export function CategoryIcon({
   slug,
   className,
@@ -106,8 +95,8 @@ export function CategoryIcon({
   className?: string;
 }) {
   if (!slug) return null;
-  const key = ICON_BY_SLUG[slug];
-  const Cmp = key ? CategoryIcons[key] : undefined;
+  const iconKey = CATEGORIES.find((c) => c.slug === slug)?.iconKey;
+  const Cmp = iconKey ? CategoryIcons[iconKey] : undefined;
   if (!Cmp) return null;
   return <Cmp className={className} />;
 }
@@ -115,14 +104,7 @@ export function CategoryIcon({
 export function XIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden>
-      <path
-        d="M18 6 6 18M6 6l12 12"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      {path("M18 6 6 18M6 6l12 12", { strokeWidth: 2 })}
     </svg>
   );
 }
@@ -130,29 +112,15 @@ export function XIcon({ className }: IconProps) {
 export function CheckIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden>
-      <path
-        d="M20 6 9 17l-5-5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      {path("M20 6 9 17l-5-5", { strokeWidth: 2 })}
     </svg>
   );
 }
 
 export function ChevronDown({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 12 12" aria-hidden>
-      <path
-        d="m3 4.5 3 3 3-3"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg className={className} viewBox="0 0 24 24" aria-hidden>
+      {path("m6 9 6 6 6-6", { strokeWidth: 1.8 })}
     </svg>
   );
 }
@@ -160,14 +128,9 @@ export function ChevronDown({ className }: IconProps) {
 export function DownloadIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden>
-      <path
-        d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      {path("M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3", {
+        strokeWidth: 2,
+      })}
     </svg>
   );
 }
@@ -185,14 +148,9 @@ export function SunIcon({ className }: IconProps) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <path
-        d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      {path(
+        "M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41",
+      )}
     </svg>
   );
 }
@@ -200,13 +158,7 @@ export function SunIcon({ className }: IconProps) {
 export function MenuIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden>
-      <path
-        d="M4 7h16M4 12h16M4 17h16"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
+      {path("M4 7h16M4 12h16M4 17h16", { strokeWidth: 1.8 })}
     </svg>
   );
 }
