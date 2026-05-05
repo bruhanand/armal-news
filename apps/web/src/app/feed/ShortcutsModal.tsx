@@ -44,7 +44,14 @@ export function ShortcutsModal({ onClose }: { onClose: () => void }) {
                 i === 0 ? "" : "border-t border-border"
               }`}
             >
-              <span className="font-medium text-fg">{row.label}</span>
+              <span className="font-medium text-fg">
+                {row.label}
+                {row.hint && (
+                  <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.08em] text-muted">
+                    {row.hint}
+                  </span>
+                )}
+              </span>
               <span className="inline-flex items-center gap-[3px]">
                 {row.keys.map((k, j) => (
                   <span key={k} className="inline-flex items-center gap-[3px]">

@@ -19,6 +19,9 @@ export const SHORTCUTS: ReadonlyArray<{
   action: ShortcutAction;
   label: string;
   keys: string[];
+  // Optional context note shown beside the label in the modal — used to
+  // mark shortcuts that don't act on the current surface.
+  hint?: string;
 }> = [
   { action: "next", label: "Next story", keys: ["J", "↓"] },
   { action: "prev", label: "Previous story", keys: ["K", "↑"] },
@@ -26,25 +29,34 @@ export const SHORTCUTS: ReadonlyArray<{
   { action: "close", label: "Close / back", keys: ["Esc"] },
   { action: "categories", label: "Open categories", keys: ["C"] },
   { action: "clearFilter", label: "Clear filter", keys: ["⌥", "C"] },
-  { action: "viewSource", label: "View source", keys: ["⌥", "↵"] },
+  {
+    action: "viewSource",
+    label: "View source",
+    keys: ["⌥", "↵"],
+    hint: "on article",
+  },
   { action: "panel", label: "This panel", keys: ["⌥", "K"] },
 ];
 
 // Map a keyboard event to a feed-side action, or null if no feed shortcut
 // matches. Feed-only context: `viewSource` is never returned here (it lives
 // on the deep-dive page).
+//
+// We match letters by `e.code` (the physical key — "KeyJ", "KeyK", …) rather
+// than `e.key` (the composed character) because macOS turns Option+letter
+// into typographic dead-keys: Option+K → "˚", Option+C → "ç". `e.key` would
+// silently miss those combos. `e.code` is layout-independent on QWERTY.
 export function matchFeedShortcut(e: KeyboardEvent): ShortcutAction | null {
   if (e.ctrlKey || e.metaKey) return null;
   if (e.altKey) {
-    const k = e.key.toLowerCase();
-    if (k === "k") return "panel";
-    if (k === "c") return "clearFilter";
+    if (e.code === "KeyK") return "panel";
+    if (e.code === "KeyC") return "clearFilter";
     return null;
   }
   if (e.key === "Escape") return "close";
-  if (e.key === "j" || e.key === "J" || e.key === "ArrowDown") return "next";
-  if (e.key === "k" || e.key === "K" || e.key === "ArrowUp") return "prev";
+  if (e.code === "KeyJ" || e.key === "ArrowDown") return "next";
+  if (e.code === "KeyK" || e.key === "ArrowUp") return "prev";
   if (e.key === "Enter" || e.key === " ") return "open";
-  if (e.key === "c" || e.key === "C") return "categories";
+  if (e.code === "KeyC") return "categories";
   return null;
 }
