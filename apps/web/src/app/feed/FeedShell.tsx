@@ -371,7 +371,7 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
             type="button"
             onClick={() => setMenuOpen(true)}
             aria-label="Open categories"
-            className="fixed bottom-6 right-5 z-30 inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface/85 text-fg shadow-card backdrop-blur md:hidden"
+            className="fixed bottom-6 left-5 z-30 inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface/85 text-fg shadow-card backdrop-blur md:hidden"
           >
             <MenuIcon className="h-5 w-5" />
           </button>

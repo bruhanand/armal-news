@@ -20,6 +20,7 @@
   "scripts": {
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:seed": "node seed/run-dev.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
