@@ -11,6 +11,7 @@
     "./db/queries": "./src/db/queries.ts",
     "./lib/slugify": "./src/lib/slugify.ts",
     "./lib/markdown-sanitize": "./src/lib/markdown-sanitize/index.ts",
+    "./lib/url": "./src/lib/url.ts",
     "./validation/story": "./src/validation/story.ts",
     "./constants/categories": "./src/constants/categories.ts",
     "./design/tokens": "./design/tokens.ts",

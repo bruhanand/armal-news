@@ -54,12 +54,36 @@ describe("IngestStoryV1", () => {
     ).toBe(false);
   });
 
-  it("rejects a non-URL source_link", () => {
+  it("rejects a source_link that is not an http(s) URL", () => {
     expect(
       IngestStoryV1.safeParse({ ...validStory, source_link: "ftp://x" }).success,
-    ).toBe(true);
+    ).toBe(false);
     expect(
       IngestStoryV1.safeParse({ ...validStory, source_link: "nope" }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a javascript: scheme in source_link", () => {
+    expect(
+      IngestStoryV1.safeParse({
+        ...validStory,
+        source_link: "javascript:alert(1)",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a javascript: scheme in image_url", () => {
+    expect(
+      IngestStoryV1.safeParse({
+        ...validStory,
+        image_url: "javascript:alert(1)",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects an unknown key on a Story (strict)", () => {
+    expect(
+      IngestStoryV1.safeParse({ ...validStory, surprise: 1 }).success,
     ).toBe(false);
   });
 
@@ -147,5 +171,11 @@ describe("IngestBatch", () => {
       stories: [validStory, { ...validStory, title: "" }],
     });
     expect(result.success).toBe(false);
+  });
+
+  it("rejects a batch with an unknown key (strict)", () => {
+    expect(
+      IngestBatch.safeParse({ stories: [validStory], surprise: 1 }).success,
+    ).toBe(false);
   });
 });

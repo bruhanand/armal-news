@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { getDb, storyCategories } from "@armal/shared/db";
 import { getPublishedStoryBySlug, listCategories } from "@armal/shared/db/queries";
 import type { Story, Category } from "@armal/shared/db/schema";
+import { isHttpUrl } from "@armal/shared/lib/url";
 import { DeepDiveShortcuts } from "./DeepDiveShortcuts";
 
 export const dynamic = "force-dynamic";
@@ -114,15 +115,23 @@ export default async function StoryPage({
             </div>
           )}
 
-          <a
-            href={story.sourceLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 mt-5 px-4 py-2.5 bg-accent text-[#FBF7EF] rounded-full font-body font-semibold text-[13px] hover:opacity-90 transition-opacity"
-          >
-            View source
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </a>
+          {isHttpUrl(story.sourceLink) ? (
+            <a
+              href={story.sourceLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 mt-5 px-4 py-2.5 bg-accent text-[#FBF7EF] rounded-full font-body font-semibold text-[13px] hover:opacity-90 transition-opacity"
+            >
+              View source
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </a>
+          ) : (
+            // Defense-in-depth for rows ingested before source_link was
+            // restricted to http(s): show a non-http(s) link as inert text.
+            <span className="inline-block mt-5 font-body text-[13px] text-muted">
+              View source
+            </span>
+          )}
 
           {/* Source-host line — mobile only. ADR 0004 § L: desktop browsers
            * preview the destination URL on hover via the status bar; mobile

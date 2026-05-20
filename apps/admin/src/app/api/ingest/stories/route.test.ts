@@ -9,6 +9,8 @@ vi.mock("@/lib/storage", async () => {
   };
 });
 
+vi.mock("node:dns/promises", () => ({ lookup: vi.fn() }));
+
 import { eq } from "drizzle-orm";
 import {
   categories,
@@ -17,9 +19,11 @@ import {
   storyCategories,
 } from "@armal/shared/db";
 import { uploadStoryImage } from "@/lib/storage";
+import { lookup } from "node:dns/promises";
 import { POST } from "./route";
 
 const uploadMock = vi.mocked(uploadStoryImage);
+const lookupMock = vi.mocked(lookup);
 
 type StoryInput = {
   external_id: string;
@@ -63,6 +67,13 @@ const fetchMock = vi.fn();
 beforeEach(() => {
   fetchMock.mockReset();
   uploadMock.mockReset();
+  lookupMock.mockReset();
+  // Default: every ingest host resolves to a public IP, so the SSRF guard is
+  // a no-op for the existing suite. Tests that exercise the guard override
+  // this with mockImplementation.
+  lookupMock.mockResolvedValue([
+    { address: "93.184.216.34", family: 4 },
+  ] as never);
   uploadMock.mockImplementation(async ({ externalId, contentType }) => {
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!allowed.includes(contentType)) {
@@ -287,6 +298,52 @@ describe("POST /api/ingest/stories — image pipeline", () => {
     expect(rows).toHaveLength(0);
     expect(uploadMock).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("isolates an SSRF-blocked image host to the failing Story", async () => {
+    // One image host resolves to the cloud-metadata link-local address, the
+    // other to a public IP. The blocked Story must land in errors and write
+    // no row; the public one must still succeed.
+    lookupMock.mockImplementation(((hostname: string) =>
+      Promise.resolve(
+        hostname === "metadata.evil.example"
+          ? [{ address: "169.254.169.254", family: 4 }]
+          : [{ address: "93.184.216.34", family: 4 }],
+      )) as never);
+    fetchMock.mockImplementation(async () => imageResponse("image/jpeg"));
+
+    const batch = {
+      stories: [
+        makeStory({
+          external_id: "ssrf-blocked",
+          title: "SSRF attempt",
+          image_url: "https://metadata.evil.example/a.jpg",
+        }),
+        makeStory({
+          external_id: "ssrf-ok",
+          title: "Legit story",
+          image_url: "https://upstream.example/b.jpg",
+        }),
+      ],
+    };
+
+    const res = await POST(ingestRequest(batch));
+    const json = (await res.json()) as {
+      ok: boolean;
+      results: Array<{ external_id: string }>;
+      errors: Array<{ index: number; message: string }>;
+    };
+
+    expect(json.ok).toBe(false);
+    expect(json.errors).toHaveLength(1);
+    expect(json.errors[0]!.index).toBe(0);
+    expect(json.errors[0]!.message).toContain("ssrf-blocked");
+    expect(json.errors[0]!.message).toMatch(/non-public address/);
+    expect(json.results.map((r) => r.external_id)).toEqual(["ssrf-ok"]);
+
+    const db = getDb();
+    const rows = await db.select().from(stories);
+    expect(rows.map((r) => r.externalId)).toEqual(["ssrf-ok"]);
   });
 });
 
