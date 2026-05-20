@@ -6,9 +6,12 @@ import {
   storyCategories,
 } from "./index";
 import {
+  encodeCursor,
   getPublishedStoryBySlug,
   listCategories,
   listPublishedStories,
+  parseCursor,
+  primaryCategoryByStoryIds,
 } from "./queries";
 
 const haveDb = Boolean(process.env.DATABASE_URL);
@@ -95,8 +98,9 @@ describe("listPublishedStories", () => {
       title: "Draft one",
       status: "draft",
     });
-    const rows = await listPublishedStories();
-    expect(rows.map((r) => r.externalId)).toEqual(["pub-1"]);
+    const { items, nextCursor } = await listPublishedStories();
+    expect(items.map((r) => r.externalId)).toEqual(["pub-1"]);
+    expect(nextCursor).toBeNull();
   });
 
   itDb(
@@ -127,13 +131,13 @@ describe("listPublishedStories", () => {
       const robotics = await listPublishedStories({
         category: "ai-in-robotics",
       });
-      expect(robotics.map((r) => r.externalId).sort()).toEqual([
+      expect(robotics.items.map((r) => r.externalId).sort()).toEqual([
         "both",
         "robo-only",
       ]);
 
       const tech = await listPublishedStories({ category: "ai-in-tech" });
-      expect(tech.map((r) => r.externalId).sort()).toEqual([
+      expect(tech.items.map((r) => r.externalId).sort()).toEqual([
         "both",
         "tech-only",
       ]);
@@ -141,7 +145,7 @@ describe("listPublishedStories", () => {
       const cooking = await listPublishedStories({
         category: "ai-in-cooking",
       });
-      expect(cooking).toHaveLength(0);
+      expect(cooking.items).toHaveLength(0);
     },
   );
 
@@ -164,8 +168,8 @@ describe("listPublishedStories", () => {
       status: "published",
       publishedAt: new Date("2026-01-15"),
     });
-    const rows = await listPublishedStories();
-    expect(rows.map((r) => r.externalId)).toEqual(["new", "mid", "old"]);
+    const { items } = await listPublishedStories();
+    expect(items.map((r) => r.externalId)).toEqual(["new", "mid", "old"]);
   });
 
   itDb("returns tags as an empty array when none were ingested", async () => {
@@ -175,11 +179,11 @@ describe("listPublishedStories", () => {
       status: "published",
       publishedAt: new Date("2026-01-01"),
     });
-    const [row] = await listPublishedStories();
-    expect(row?.tags).toEqual([]);
+    const { items } = await listPublishedStories();
+    expect(items[0]?.tags).toEqual([]);
   });
 
-  itDb("respects limit", async () => {
+  itDb("respects limit and emits nextCursor when more pages exist", async () => {
     for (let i = 0; i < 5; i++) {
       await makeStory({
         externalId: `s-${i}`,
@@ -188,9 +192,140 @@ describe("listPublishedStories", () => {
         publishedAt: new Date(2026, 0, i + 1),
       });
     }
-    const rows = await listPublishedStories({ limit: 2 });
-    expect(rows).toHaveLength(2);
+    const { items, nextCursor } = await listPublishedStories({ limit: 2 });
+    expect(items).toHaveLength(2);
+    expect(nextCursor).not.toBeNull();
+    // Newest two by published_at DESC.
+    expect(items.map((r) => r.externalId)).toEqual(["s-4", "s-3"]);
   });
+
+  itDb(
+    "cursor returns the page strictly after; pages do not overlap",
+    async () => {
+      for (let i = 0; i < 5; i++) {
+        await makeStory({
+          externalId: `s-${i}`,
+          title: `Story ${i}`,
+          status: "published",
+          publishedAt: new Date(2026, 0, i + 1),
+        });
+      }
+      const page1 = await listPublishedStories({ limit: 2 });
+      const page2 = await listPublishedStories({
+        limit: 2,
+        cursor: page1.nextCursor!,
+      });
+      expect(page2.items.map((r) => r.externalId)).toEqual(["s-2", "s-1"]);
+      const overlap = new Set([
+        ...page1.items.map((r) => r.externalId),
+        ...page2.items.map((r) => r.externalId),
+      ]);
+      expect(overlap.size).toBe(4);
+
+      const page3 = await listPublishedStories({
+        limit: 2,
+        cursor: page2.nextCursor!,
+      });
+      expect(page3.items.map((r) => r.externalId)).toEqual(["s-0"]);
+      expect(page3.nextCursor).toBeNull();
+    },
+  );
+
+  itDb(
+    "splits equal-published_at rows deterministically by id DESC",
+    async () => {
+      const sharedAt = new Date("2026-01-01T00:00:00Z");
+      for (let i = 0; i < 4; i++) {
+        await makeStory({
+          externalId: `tie-${i}`,
+          title: `Tied ${i}`,
+          status: "published",
+          publishedAt: sharedAt,
+        });
+      }
+      const page1 = await listPublishedStories({ limit: 2 });
+      const page2 = await listPublishedStories({
+        limit: 2,
+        cursor: page1.nextCursor!,
+      });
+      const seen = new Set([
+        ...page1.items.map((r) => r.id),
+        ...page2.items.map((r) => r.id),
+      ]);
+      expect(seen.size).toBe(4);
+      // Each page is in id-DESC within its tier — verify no shared items.
+      for (const it of page2.items) {
+        expect(page1.items.find((p) => p.id === it.id)).toBeUndefined();
+      }
+    },
+  );
+
+  itDb("rejects a malformed cursor", async () => {
+    await expect(
+      listPublishedStories({ cursor: "not-a-cursor" }),
+    ).rejects.toThrow(/malformed cursor/);
+  });
+});
+
+describe("parseCursor / encodeCursor", () => {
+  it("round-trips a valid (publishedAt, id) pair", () => {
+    const id = "11111111-1111-1111-1111-111111111111";
+    const publishedAt = new Date("2026-04-30T12:34:56.789Z");
+    const cursor = encodeCursor({ publishedAt, id });
+    const parsed = parseCursor(cursor);
+    expect(parsed?.id).toBe(id);
+    expect(parsed?.publishedAt.toISOString()).toBe(publishedAt.toISOString());
+  });
+
+  it("returns null on missing separator", () => {
+    expect(parseCursor("2026-01-01T00:00:00Z")).toBeNull();
+  });
+
+  it("returns null on bad uuid", () => {
+    expect(parseCursor("2026-01-01T00:00:00Z__not-a-uuid")).toBeNull();
+  });
+
+  it("rejects ill-grouped uuid-shaped strings (length-only check is not enough)", () => {
+    // 36 chars and only [0-9a-f-] but not in canonical 8-4-4-4-12 grouping.
+    expect(
+      parseCursor("2026-01-01T00:00:00Z__------------------------------------"),
+    ).toBeNull();
+    expect(
+      parseCursor("2026-01-01T00:00:00Z__1111111111111111111111111111111111aa"),
+    ).toBeNull();
+  });
+
+  it("returns null on bad date", () => {
+    expect(
+      parseCursor("not-a-date__11111111-1111-1111-1111-111111111111"),
+    ).toBeNull();
+  });
+});
+
+describe("primaryCategoryByStoryIds", () => {
+  itDb(
+    "returns the lowest-sortOrder Category for each Story (multi-category resolves deterministically)",
+    async () => {
+      const robo = await makeStory({
+        externalId: "robo",
+        title: "Robotics only",
+        status: "published",
+        publishedAt: new Date("2026-01-01"),
+        categorySlugs: ["ai-in-robotics"],
+      });
+      // tech (sortOrder 10) and research (70) — tech wins.
+      const both = await makeStory({
+        externalId: "tech-research",
+        title: "Tech and research",
+        status: "published",
+        publishedAt: new Date("2026-01-02"),
+        categorySlugs: ["ai-research", "ai-in-tech"],
+      });
+      const map = await primaryCategoryByStoryIds([robo, both]);
+      expect(map.get(robo)?.slug).toBe("ai-in-robotics");
+      expect(map.get(both)?.slug).toBe("ai-in-tech");
+    },
+  );
 });
 
 describe("getPublishedStoryBySlug", () => {
