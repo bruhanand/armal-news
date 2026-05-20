@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { getDb, storyCategories } from "@armal/shared/db";
 import { getPublishedStoryBySlug, listCategories } from "@armal/shared/db/queries";
 import type { Story, Category } from "@armal/shared/db/schema";
+import { DeepDiveShortcuts } from "./DeepDiveShortcuts";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,7 @@ export default async function StoryPage({
 
   return (
     <main className="min-h-screen bg-bg text-fg">
+      <DeepDiveShortcuts sourceLink={story.sourceLink} />
       {/* Desktop / tablet header — slim back-to-feed link. Mobile (<768px) uses
        * the glass back-button overlay on the hero instead (ADR 0004 § L). */}
       <header className="hidden md:flex items-center px-8 py-5 text-sm text-muted">

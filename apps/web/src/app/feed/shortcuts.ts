@@ -60,3 +60,14 @@ export function matchFeedShortcut(e: KeyboardEvent): ShortcutAction | null {
   if (e.code === "KeyC") return "categories";
   return null;
 }
+
+// Map a keyboard event to a deep-dive (/story/[slug]) action, or null.
+// Only `viewSource` (⌥↵) and `close` (Esc) act on the article surface.
+// Enter and Escape aren't letter keys, so `e.key` matches them directly —
+// the `e.code` dead-key handling matchFeedShortcut needs doesn't apply here.
+export function matchDeepDiveShortcut(e: KeyboardEvent): ShortcutAction | null {
+  if (e.ctrlKey || e.metaKey) return null;
+  if (e.altKey && e.key === "Enter") return "viewSource";
+  if (e.key === "Escape") return "close";
+  return null;
+}

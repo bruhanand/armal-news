@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { matchFeedShortcut } from "./shortcuts";
+import { matchDeepDiveShortcut, matchFeedShortcut } from "./shortcuts";
 
 function ev(init: Partial<KeyboardEvent>): KeyboardEvent {
   // Tests run under happy-dom-less Node; KeyboardEvent isn't constructable
@@ -59,5 +59,34 @@ describe("matchFeedShortcut", () => {
 
   it("returns null for arbitrary keys", () => {
     expect(matchFeedShortcut(ev({ key: "x", code: "KeyX" }))).toBeNull();
+  });
+});
+
+describe("matchDeepDiveShortcut", () => {
+  it("maps ⌥↵ (Option+Enter) to 'viewSource'", () => {
+    expect(matchDeepDiveShortcut(ev({ key: "Enter", altKey: true }))).toBe(
+      "viewSource",
+    );
+  });
+
+  it("maps Escape to 'close'", () => {
+    expect(matchDeepDiveShortcut(ev({ key: "Escape" }))).toBe("close");
+  });
+
+  it("returns null for a plain Enter without Option", () => {
+    expect(matchDeepDiveShortcut(ev({ key: "Enter" }))).toBeNull();
+  });
+
+  it("returns null for feed keys like J", () => {
+    expect(matchDeepDiveShortcut(ev({ code: "KeyJ", key: "j" }))).toBeNull();
+  });
+
+  it("ignores ctrl/meta combos", () => {
+    expect(
+      matchDeepDiveShortcut(ev({ key: "Enter", altKey: true, ctrlKey: true })),
+    ).toBeNull();
+    expect(
+      matchDeepDiveShortcut(ev({ key: "Enter", altKey: true, metaKey: true })),
+    ).toBeNull();
   });
 });
