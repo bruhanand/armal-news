@@ -18,6 +18,7 @@ import {
   type IngestStoryV1,
 } from "@armal/shared/validation/story";
 import { uploadStoryImage } from "@/lib/storage";
+import { fetchImageSafely } from "@/lib/safe-image-fetch";
 
 type IngestResult = {
   index: number;
@@ -29,18 +30,11 @@ type IngestResult = {
 type IngestError = { index: number; message: string };
 
 async function fetchAndUploadImage(story: IngestStoryV1): Promise<string> {
-  const res = await fetch(story.image_url);
-  if (!res.ok) {
-    throw new Error(
-      `image fetch failed (${res.status}) for ${story.image_url}`,
-    );
-  }
-  const contentType =
-    res.headers.get("content-type")?.split(";")[0]?.trim() ?? "";
+  const { contentType, body } = await fetchImageSafely(story.image_url);
   const { publicUrl } = await uploadStoryImage({
     externalId: story.external_id,
     contentType,
-    body: await res.arrayBuffer(),
+    body,
   });
   return publicUrl;
 }
