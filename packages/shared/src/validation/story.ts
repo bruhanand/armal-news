@@ -1,24 +1,13 @@
 import { z } from "zod";
 import { CATEGORY_SLUGS } from "../constants/categories";
+import { isHttpUrl } from "../lib/url";
 
-// Both URL fields are attacker-influenceable (OpenClaw scrapes arbitrary
-// upstream pages). z.string().url() alone accepts javascript:/data:/ftp:, which
-// would be a stored-XSS sink on render and a scheme bypass on the image fetch —
-// so refine down to http(s) only.
+// z.string().url() accepts javascript:/data:/ftp:; both URL fields are
+// attacker-influenceable, so refine down to http(s) only.
 const httpUrl = z
   .string()
   .url()
-  .refine(
-    (value) => {
-      try {
-        const { protocol } = new URL(value);
-        return protocol === "http:" || protocol === "https:";
-      } catch {
-        return false;
-      }
-    },
-    { message: "must be an http(s) URL" },
-  );
+  .refine(isHttpUrl, { message: "must be an http(s) URL" });
 
 export const IngestStoryV1 = z
   .object({

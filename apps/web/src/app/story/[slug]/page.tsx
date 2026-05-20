@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { getDb, storyCategories } from "@armal/shared/db";
 import { getPublishedStoryBySlug, listCategories } from "@armal/shared/db/queries";
 import type { Story, Category } from "@armal/shared/db/schema";
+import { isHttpUrl } from "@armal/shared/lib/url";
 import { DeepDiveShortcuts } from "./DeepDiveShortcuts";
 
 export const dynamic = "force-dynamic";
@@ -155,17 +156,6 @@ function parseSourceHost(sourceLink: string): string | null {
     return [host, ...segments].join(" / ");
   } catch {
     return null;
-  }
-}
-
-// The source pill renders an <a href>; a javascript:/data: scheme in a row
-// ingested before source_link was validated would be an XSS sink.
-function isHttpUrl(value: string): boolean {
-  try {
-    const { protocol } = new URL(value);
-    return protocol === "http:" || protocol === "https:";
-  } catch {
-    return false;
   }
 }
 
