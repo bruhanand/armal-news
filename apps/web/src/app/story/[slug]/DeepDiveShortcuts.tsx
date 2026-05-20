@@ -19,7 +19,9 @@ export function DeepDiveShortcuts({ sourceLink }: { sourceLink: string }) {
       if (!action) return;
       e.preventDefault();
       if (action === "viewSource") {
-        window.open(sourceLink, "_blank", "noopener,noreferrer");
+        if (isHttpUrl(sourceLink)) {
+          window.open(sourceLink, "_blank", "noopener,noreferrer");
+        }
       } else if (action === "close") {
         router.push("/");
       }
@@ -30,4 +32,15 @@ export function DeepDiveShortcuts({ sourceLink }: { sourceLink: string }) {
   }, [router, sourceLink]);
 
   return null;
+}
+
+// The viewSource shortcut passes sourceLink to window.open; a javascript:/data:
+// scheme in a row ingested before source_link was validated would be an XSS sink.
+function isHttpUrl(value: string): boolean {
+  try {
+    const { protocol } = new URL(value);
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
 }
