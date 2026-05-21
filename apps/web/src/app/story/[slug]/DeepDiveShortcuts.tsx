@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { isHttpUrl } from "@armal/shared/lib/url";
 import { matchDeepDiveShortcut } from "@/app/feed/shortcuts";
 
 // Desktop-only keyboard shortcuts for the deep-dive page. The keydown
@@ -32,15 +33,4 @@ export function DeepDiveShortcuts({ sourceLink }: { sourceLink: string }) {
   }, [router, sourceLink]);
 
   return null;
-}
-
-// The viewSource shortcut passes sourceLink to window.open; a javascript:/data:
-// scheme in a row ingested before source_link was validated would be an XSS sink.
-function isHttpUrl(value: string): boolean {
-  try {
-    const { protocol } = new URL(value);
-    return protocol === "http:" || protocol === "https:";
-  } catch {
-    return false;
-  }
 }
