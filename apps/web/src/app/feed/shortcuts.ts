@@ -71,3 +71,21 @@ export function matchDeepDiveShortcut(e: KeyboardEvent): ShortcutAction | null {
   if (e.key === "Escape") return "close";
   return null;
 }
+
+// Rects and viewportCenter must share a coordinate frame — callers pass
+// viewport-relative values (getBoundingClientRect, window.innerHeight / 2).
+export function closestIndexToCenter(
+  cards: ReadonlyArray<{ top: number; height: number }>,
+  viewportCenter: number,
+): number {
+  let best = 0;
+  let bestDist = Infinity;
+  cards.forEach((c, i) => {
+    const dist = Math.abs(c.top + c.height / 2 - viewportCenter);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = i;
+    }
+  });
+  return best;
+}

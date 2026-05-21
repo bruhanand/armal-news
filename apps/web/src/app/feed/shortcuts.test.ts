@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { matchDeepDiveShortcut, matchFeedShortcut } from "./shortcuts";
+import {
+  closestIndexToCenter,
+  matchDeepDiveShortcut,
+  matchFeedShortcut,
+} from "./shortcuts";
 
 function ev(init: Partial<KeyboardEvent>): KeyboardEvent {
   // Tests run under happy-dom-less Node; KeyboardEvent isn't constructable
@@ -88,5 +92,42 @@ describe("matchDeepDiveShortcut", () => {
     expect(
       matchDeepDiveShortcut(ev({ key: "Enter", altKey: true, metaKey: true })),
     ).toBeNull();
+  });
+});
+
+describe("closestIndexToCenter", () => {
+  it("returns 0 for an empty card list", () => {
+    expect(closestIndexToCenter([], 400)).toBe(0);
+  });
+
+  it("returns 0 for a single card", () => {
+    expect(closestIndexToCenter([{ top: 0, height: 100 }], 400)).toBe(0);
+  });
+
+  it("picks the middle card when the viewport center is nearest it", () => {
+    const cards = [
+      { top: 0, height: 100 },
+      { top: 300, height: 100 },
+      { top: 600, height: 100 },
+    ];
+    expect(closestIndexToCenter(cards, 380)).toBe(1);
+  });
+
+  it("picks the last card when the feed is scrolled past the end", () => {
+    // Every card sits above the viewport — all rect.top values negative.
+    const cards = [
+      { top: -900, height: 100 },
+      { top: -600, height: 100 },
+      { top: -300, height: 100 },
+    ];
+    expect(closestIndexToCenter(cards, 400)).toBe(2);
+  });
+
+  it("breaks an exact tie toward the lower index", () => {
+    const cards = [
+      { top: 0, height: 100 },
+      { top: 700, height: 100 },
+    ];
+    expect(closestIndexToCenter(cards, 400)).toBe(0);
   });
 });
