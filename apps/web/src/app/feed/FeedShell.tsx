@@ -21,7 +21,11 @@ import {
 } from "./icons";
 import { CategoryMenu, type CategoryOption } from "./CategoryMenu";
 import { ShortcutsModal } from "./ShortcutsModal";
-import { matchFeedShortcut, type ShortcutAction } from "./shortcuts";
+import {
+  closestIndexToCenter,
+  matchFeedShortcut,
+  type ShortcutAction,
+} from "./shortcuts";
 
 // One DOM tree, two CSS surfaces. The mobile snap container and the desktop
 // grid container coexist in markup; Tailwind's `md:` breakpoint hides one or
@@ -43,7 +47,7 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
   const mobileScrollRef = useRef<HTMLDivElement | null>(null);
-  const desktopScrollRef = useRef<HTMLDivElement | null>(null);
+  const desktopGridRef = useRef<HTMLDivElement | null>(null);
   const desktopSentinelRef = useRef<HTMLDivElement | null>(null);
   const mobileSentinelRef = useRef<HTMLDivElement | null>(null);
   const inFlightRef = useRef(false);
@@ -101,7 +105,7 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
     const observers: IntersectionObserver[] = [];
     if (desktopSentinelRef.current) {
       const io = new IntersectionObserver(onIntersect, {
-        rootMargin: "400px 0px",
+        rootMargin: "1000px 0px",
       });
       io.observe(desktopSentinelRef.current);
       observers.push(io);
@@ -119,7 +123,6 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
 
   const scrollToTop = useCallback(() => {
     mobileScrollRef.current?.scrollTo({ top: 0, behavior: "instant" });
-    desktopScrollRef.current?.scrollTo({ top: 0, behavior: "instant" });
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "instant" });
     }
@@ -152,28 +155,19 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
     if (!window.matchMedia("(min-width: 768px)").matches) return;
 
     function getCards(): NodeListOf<HTMLAnchorElement> | null {
-      const root = desktopScrollRef.current;
+      const root = desktopGridRef.current;
       return root
         ? root.querySelectorAll<HTMLAnchorElement>("a[data-card-index]")
         : null;
     }
 
     function findIndexFromDom(cards: NodeListOf<HTMLAnchorElement>): number {
-      const root = desktopScrollRef.current;
-      if (!root || cards.length === 0) return 0;
-      const center =
-        root.getBoundingClientRect().top + root.clientHeight / 2;
-      let best = 0;
-      let bestDist = Infinity;
-      cards.forEach((el, i) => {
+      if (cards.length === 0) return 0;
+      const rects = Array.from(cards, (el) => {
         const r = el.getBoundingClientRect();
-        const d = Math.abs(r.top + r.height / 2 - center);
-        if (d < bestDist) {
-          bestDist = d;
-          best = i;
-        }
+        return { top: r.top, height: r.height };
       });
-      return best;
+      return closestIndexToCenter(rects, window.innerHeight / 2);
     }
 
     function focusedIndex(cards: NodeListOf<HTMLAnchorElement>): number {
@@ -326,7 +320,7 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
 
       {/* DESKTOP GRID (≥768px) — 2 columns at md+, scroll on the page. */}
       <div
-        ref={desktopScrollRef}
+        ref={desktopGridRef}
         className="hidden min-h-[calc(100vh-56px)] bg-bg md:block"
       >
         {items.length === 0 ? (
