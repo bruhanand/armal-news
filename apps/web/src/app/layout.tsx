@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
 
@@ -22,7 +23,10 @@ const jetbrains = JetBrains_Mono({
   display: "swap",
 });
 
-export const metadata = {
+export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://armal.news",
+  ),
   title: "Armal News",
 };
 
