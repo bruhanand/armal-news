@@ -55,3 +55,7 @@ Wire the theme toggle button placeholder from slice 0007 into a real provider; s
 
 - Issue 0005 (design tokens)
 - Issue 0007 (chrome placeholder for the toggle, install button slot)
+
+---
+
+**Status:** Shipped via Sandcastle on 2026-05-23. Merge commit: 03f5cf6.
