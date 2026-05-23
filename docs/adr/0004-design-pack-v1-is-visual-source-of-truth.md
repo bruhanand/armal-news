@@ -127,6 +127,8 @@ The config-sync protocol gets its own slice (issue 0011) — it is NOT in slice 
 
 This preserves ADR-0003 (admin app stays a thin tool on Tailscale; OpenClaw runs externally; no serverless RSS-polling background workers in the Next.js admin).
 
+**Amendment (slice 0011, 2026-05-23):** the sync direction is **OpenClaw → Admin pull** (issue 0011 Option A), not Admin → OpenClaw push. OpenClaw polls `GET /api/admin/openclaw/config` every ~30s; the response carries the current ingestion config + a `version` (the row's `updated_at`) so OpenClaw can no-op when nothing changed. Up to ~30s of save-to-apply staleness is the accepted trade-off; in return there is no Admin → OpenClaw wiring, no retry logic on push, and the admin app never speaks first. Full contract: `docs/openclaw-contract.md`.
+
 ### P. Settings → Auth is a UI stub for the post-Tailscale migration
 
 **Honors ADR-0003.** Auth panel renders the design's email + session-timeout fields with a banner: *"Active when admin moves off Tailscale (ADR-0003 migration trigger)."* Inputs save to `admin_settings`; nothing reads from them. When ADR-0003's migration trigger fires (admin moves off Tailscale + auth provider gets bolted on), this panel becomes live.

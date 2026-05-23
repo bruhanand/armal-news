@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { adminPatch } from "../_components/api";
 import { useToast } from "../_components/ToastProvider";
+import type { OpenClawHealth } from "@armal/shared/validation/admin-settings";
 import type { AuthSettings, IngestionSettings } from "./page";
 
 type CategoryProp = {
@@ -17,14 +18,16 @@ export function SettingsPanels({
   categories,
   ingestion,
   auth,
+  health,
 }: {
   categories: CategoryProp[];
   ingestion: IngestionSettings | null;
   auth: AuthSettings | null;
+  health: OpenClawHealth | null;
 }) {
   return (
     <>
-      <IngestionPanel initial={ingestion} />
+      <IngestionPanel initial={ingestion} health={health} />
       <div className="divider" />
       <CategoriesPanel initial={categories} />
       <div className="divider" />
@@ -33,7 +36,55 @@ export function SettingsPanels({
   );
 }
 
-function IngestionPanel({ initial }: { initial: IngestionSettings | null }) {
+// "4 min ago" / "just now" — short, low-precision; the badge is glanceable, not
+// a metric. Caps at "1d+" because beyond a day the loop is broken anyway.
+function relativeTime(iso: string): string {
+  const ms = Date.now() - Date.parse(iso);
+  if (!Number.isFinite(ms) || ms < 0) return "just now";
+  const sec = Math.floor(ms / 1000);
+  if (sec < 30) return "just now";
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min} min ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  return "1d+ ago";
+}
+
+function HealthBadge({ health }: { health: OpenClawHealth | null }) {
+  if (!health) {
+    return (
+      <div className="info-banner">
+        Waiting for OpenClaw heartbeat. Once OpenClaw polls{" "}
+        <code>/api/admin/openclaw/config</code> and POSTs to{" "}
+        <code>/api/admin/openclaw/heartbeat</code>, this badge will go live.
+      </div>
+    );
+  }
+  const ok = health.lastIngestStatus === "ok";
+  return (
+    <div
+      className={ok ? "openclaw-status openclaw-status-ok" : "openclaw-status openclaw-status-err"}
+    >
+      <span className="dot" aria-hidden="true" />
+      <span className="lbl">
+        {ok ? "OpenClaw connected" : "OpenClaw error"}
+      </span>
+      <span className="muted">· last ingest {relativeTime(health.lastSeen)}</span>
+      {health.lastIngestMessage ? (
+        <span className="msg">— {health.lastIngestMessage}</span>
+      ) : null}
+    </div>
+  );
+}
+
+function IngestionPanel({
+  initial,
+  health,
+}: {
+  initial: IngestionSettings | null;
+  health: OpenClawHealth | null;
+}) {
   const toast = useToast();
   const [pollInterval, setPollInterval] = useState(
     String(initial?.pollIntervalMinutes ?? 15),
@@ -74,11 +125,7 @@ function IngestionPanel({ initial }: { initial: IngestionSettings | null }) {
         RSS sources and ingest behaviour. Changes take effect on the next poll
         cycle.
       </p>
-      <div className="info-banner">
-        Active when slice 0011 ships the OpenClaw config sync. The form saves
-        to <code>admin_settings.ingestion</code> today but no code reads from
-        it yet (ADR 0004 § O).
-      </div>
+      <HealthBadge health={health} />
       <div className="field">
         <label>Poll interval (minutes)</label>
         <input

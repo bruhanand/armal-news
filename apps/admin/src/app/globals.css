@@ -421,6 +421,48 @@ label .req {
   color: var(--warn);
   margin-bottom: 16px;
 }
+.openclaw-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+.openclaw-status .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+.openclaw-status .lbl {
+  font-weight: 600;
+}
+.openclaw-status .muted {
+  color: var(--muted);
+}
+.openclaw-status .msg {
+  color: var(--muted);
+  font-style: italic;
+}
+.openclaw-status-ok {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success);
+}
+.openclaw-status-ok .dot {
+  background: var(--success);
+}
+.openclaw-status-err {
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+.openclaw-status-err .dot {
+  background: var(--danger);
+}
 
 /* Table --- */
 .tbl-wrap {
