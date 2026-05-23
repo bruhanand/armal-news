@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Armal News",
+    "slug": "armal-news",
+    "scheme": "armal",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon-light.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-light.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F5F0E8",
+      "dark": {
+        "image": "./assets/splash-dark.png",
+        "backgroundColor": "#262624"
+      }
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.armal.news"
+    },
+    "android": {
+      "package": "com.armal.news",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon-light.png",
+        "backgroundColor": "#F5F0E8"
+      }
+    },
+    "extra": {
+      "apiBaseUrl": "http://localhost:3000"
+    },
+    "plugins": ["expo-font"]
+  }
+}
