@@ -25,10 +25,8 @@ export function ThemeToggle({ className }: { className?: string }) {
     }
   }, []);
 
-  // When user picks "system", live-track the OS preference so a `prefers-
-  // color-scheme` flip while the tab is open re-applies immediately. The CSS
-  // media query in tokens.css handles the actual swap; this effect just
-  // ensures we leave the override class off.
+  // Leaving "theme-light"/"theme-dark" off on "system" lets the
+  // prefers-color-scheme media query in tokens.css drive the swap live.
   useEffect(() => {
     const root = document.documentElement;
     root.classList.remove("theme-light", "theme-dark");
@@ -49,12 +47,7 @@ export function ThemeToggle({ className }: { className?: string }) {
     });
   }, []);
 
-  const label =
-    choice === "system"
-      ? "Theme: system (click for light)"
-      : choice === "light"
-        ? "Theme: light (click for dark)"
-        : "Theme: dark (click for system)";
+  const label = labelFor(choice);
 
   return (
     <button
@@ -67,15 +60,21 @@ export function ThemeToggle({ className }: { className?: string }) {
         "inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted hover:text-fg"
       }
     >
-      {choice === "light" ? (
-        <SunIcon />
-      ) : choice === "dark" ? (
-        <MoonIcon />
-      ) : (
-        <SystemIcon />
-      )}
+      <ThemeIcon choice={choice} />
     </button>
   );
+}
+
+function labelFor(choice: ThemeChoice): string {
+  if (choice === "system") return "Theme: system (click for light)";
+  if (choice === "light") return "Theme: light (click for dark)";
+  return "Theme: dark (click for system)";
+}
+
+function ThemeIcon({ choice }: { choice: ThemeChoice }) {
+  if (choice === "light") return <SunIcon />;
+  if (choice === "dark") return <MoonIcon />;
+  return <SystemIcon />;
 }
 
 function SunIcon() {
