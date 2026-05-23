@@ -6,10 +6,14 @@ import {
   storyCategories,
 } from "./index";
 import {
+  categorySlugsByStoryIds,
+  countStoriesByStatus,
   encodeCursor,
   getPublishedStoryBySlug,
   listCategories,
+  listDraftStories,
   listPublishedStories,
+  listRejectedStories,
   parseCursor,
   primaryCategoryByStoryIds,
 } from "./queries";
@@ -101,6 +105,58 @@ describe("listPublishedStories", () => {
     const { items, nextCursor } = await listPublishedStories();
     expect(items.map((r) => r.externalId)).toEqual(["pub-1"]);
     expect(nextCursor).toBeNull();
+  });
+
+  itDb(
+    "excludes rejected and un-published (newly draft) rows — public reader regression",
+    async () => {
+      // Three rows exist; only the published one should leak to readers.
+      // This is the public-surface regression for issue 0008: when an admin
+      // un-publishes (published → draft) or rejects a Story, it must
+      // disappear from /api/feed and /api/story/[slug] immediately.
+      await makeStory({
+        externalId: "live",
+        title: "Live story",
+        status: "published",
+        publishedAt: new Date("2026-03-01"),
+      });
+      await makeStory({
+        externalId: "unpublished",
+        title: "Un-published story",
+        status: "draft", // was published, now reverted
+      });
+      await makeStory({
+        externalId: "rejected",
+        title: "Rejected story",
+        status: "rejected",
+      });
+      const { items } = await listPublishedStories();
+      expect(items.map((r) => r.externalId)).toEqual(["live"]);
+    },
+  );
+
+  itDb("filters by ?q= over title + summary (case-insensitive ILIKE)", async () => {
+    await makeStory({
+      externalId: "q-anthropic",
+      title: "Anthropic ships interpretability tools",
+      status: "published",
+      publishedAt: new Date("2026-04-01"),
+    });
+    await makeStory({
+      externalId: "q-cursor",
+      title: "Cursor 2.0 ships parallel agents",
+      status: "published",
+      publishedAt: new Date("2026-04-02"),
+    });
+    const r1 = await listPublishedStories({ q: "anthropic" });
+    expect(r1.items.map((r) => r.externalId)).toEqual(["q-anthropic"]);
+    const r2 = await listPublishedStories({ q: "AGENTS" });
+    expect(r2.items.map((r) => r.externalId)).toEqual(["q-cursor"]);
+    const r3 = await listPublishedStories({ q: "ships" });
+    expect(r3.items.map((r) => r.externalId).sort()).toEqual([
+      "q-anthropic",
+      "q-cursor",
+    ]);
   });
 
   itDb(
@@ -326,6 +382,111 @@ describe("primaryCategoryByStoryIds", () => {
       expect(map.get(both)?.slug).toBe("ai-in-tech");
     },
   );
+});
+
+describe("listDraftStories / listRejectedStories / countStoriesByStatus", () => {
+  itDb("listDraftStories returns only draft rows, newest first", async () => {
+    await makeStory({
+      externalId: "d-old",
+      title: "Old draft",
+      status: "draft",
+    });
+    // bump createdAt by ordering them in time
+    await new Promise((r) => setTimeout(r, 5));
+    await makeStory({
+      externalId: "d-new",
+      title: "New draft",
+      status: "draft",
+    });
+    await makeStory({
+      externalId: "p-1",
+      title: "Pub",
+      status: "published",
+      publishedAt: new Date("2026-01-01"),
+    });
+    await makeStory({
+      externalId: "r-1",
+      title: "Rej",
+      status: "rejected",
+    });
+    const rows = await listDraftStories();
+    expect(rows.map((r) => r.externalId)).toEqual(["d-new", "d-old"]);
+  });
+
+  itDb("listDraftStories filters by ?q=", async () => {
+    await makeStory({
+      externalId: "d-anthropic",
+      title: "Anthropic interpretability draft",
+      status: "draft",
+    });
+    await makeStory({
+      externalId: "d-cursor",
+      title: "Cursor parallel agents draft",
+      status: "draft",
+    });
+    const rows = await listDraftStories({ q: "anthropic" });
+    expect(rows.map((r) => r.externalId)).toEqual(["d-anthropic"]);
+  });
+
+  itDb("listRejectedStories returns only rejected rows", async () => {
+    await makeStory({
+      externalId: "r-1",
+      title: "Rej one",
+      status: "rejected",
+    });
+    await makeStory({
+      externalId: "r-2",
+      title: "Rej two",
+      status: "rejected",
+    });
+    await makeStory({
+      externalId: "d-1",
+      title: "Draft",
+      status: "draft",
+    });
+    const rows = await listRejectedStories();
+    expect(rows.map((r) => r.externalId).sort()).toEqual(["r-1", "r-2"]);
+  });
+
+  itDb("countStoriesByStatus reports zeros for missing statuses", async () => {
+    await makeStory({
+      externalId: "c-d-1",
+      title: "Draft",
+      status: "draft",
+    });
+    await makeStory({
+      externalId: "c-d-2",
+      title: "Draft",
+      status: "draft",
+    });
+    await makeStory({
+      externalId: "c-r",
+      title: "Rejected",
+      status: "rejected",
+    });
+    const counts = await countStoriesByStatus();
+    expect(counts).toEqual({ draft: 2, published: 0, rejected: 1 });
+  });
+});
+
+describe("categorySlugsByStoryIds", () => {
+  itDb("returns a slugs[] per Story, sorted by sortOrder", async () => {
+    const a = await makeStory({
+      externalId: "cs-a",
+      title: "A",
+      status: "draft",
+      categorySlugs: ["ai-research", "ai-in-tech"],
+    });
+    const b = await makeStory({
+      externalId: "cs-b",
+      title: "B",
+      status: "draft",
+      categorySlugs: ["ai-in-cooking"],
+    });
+    const map = await categorySlugsByStoryIds([a, b]);
+    expect(map.get(a)).toEqual(["ai-in-tech", "ai-research"]);
+    expect(map.get(b)).toEqual(["ai-in-cooking"]);
+  });
 });
 
 describe("getPublishedStoryBySlug", () => {

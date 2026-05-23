@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { getDb, type Db } from "./client";
 import {
   categories,
@@ -8,6 +8,25 @@ import {
   type Story,
 } from "./schema";
 import type { CategorySlug } from "../constants/categories";
+
+// Plain ILIKE search across title + short_summary. MVP volume is small;
+// no full-text index needed (ADR 0004 § D).
+function searchPredicate(q: string | undefined) {
+  if (!q) return undefined;
+  const trimmed = q.trim();
+  if (!trimmed) return undefined;
+  // Escape SQL LIKE metacharacters so a literal % or _ in the query
+  // doesn't act as a wildcard. Backslash-escape the escape too.
+  const escaped = trimmed
+    .replace(/\\/g, "\\\\")
+    .replace(/%/g, "\\%")
+    .replace(/_/g, "\\_");
+  const pattern = `%${escaped}%`;
+  return or(
+    ilike(stories.title, pattern),
+    ilike(stories.shortSummary, pattern),
+  );
+}
 
 // A Drizzle transaction handle is structurally a Db with the same query API.
 export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -36,6 +55,7 @@ export type ListPublishedStoriesArgs = {
   category?: CategorySlug;
   cursor?: string;
   limit?: number;
+  q?: string;
 };
 
 export type ListPublishedStoriesResult = {
@@ -87,6 +107,7 @@ export async function listPublishedStories(
   const cursorPredicate = cursor
     ? sql`(${stories.publishedAt}, ${stories.id}) < (${cursor.publishedAt.toISOString()}, ${cursor.id})`
     : undefined;
+  const search = searchPredicate(args.q);
 
   let rows: Story[];
   if (args.category) {
@@ -100,6 +121,7 @@ export async function listPublishedStories(
           eq(stories.status, "published"),
           eq(categories.slug, args.category),
           cursorPredicate,
+          search,
         ),
       )
       .orderBy(desc(stories.publishedAt), desc(stories.id))
@@ -109,7 +131,9 @@ export async function listPublishedStories(
     rows = await db
       .select()
       .from(stories)
-      .where(and(eq(stories.status, "published"), cursorPredicate))
+      .where(
+        and(eq(stories.status, "published"), cursorPredicate, search),
+      )
       .orderBy(desc(stories.publishedAt), desc(stories.id))
       .limit(fetchLimit);
   }
@@ -123,6 +147,54 @@ export async function listPublishedStories(
     };
   }
   return { items: rows, nextCursor: null };
+}
+
+// Admin list helpers. No cursor pagination here — the admin works at MVP
+// volume (single human, dozens of drafts at most) and the design wires a
+// status-scoped table per page. `q` runs the same ILIKE search predicate
+// the published list uses (ADR 0004 § D).
+
+export type ListByStatusArgs = { q?: string; limit?: number };
+
+export async function listDraftStories(
+  args: ListByStatusArgs = {},
+): Promise<Story[]> {
+  const db = getDb();
+  return db
+    .select()
+    .from(stories)
+    .where(and(eq(stories.status, "draft"), searchPredicate(args.q)))
+    .orderBy(desc(stories.createdAt), desc(stories.id))
+    .limit(args.limit ?? 200);
+}
+
+export async function listRejectedStories(
+  args: ListByStatusArgs = {},
+): Promise<Story[]> {
+  const db = getDb();
+  return db
+    .select()
+    .from(stories)
+    .where(and(eq(stories.status, "rejected"), searchPredicate(args.q)))
+    .orderBy(desc(stories.updatedAt), desc(stories.id))
+    .limit(args.limit ?? 200);
+}
+
+export async function countStoriesByStatus(): Promise<{
+  draft: number;
+  published: number;
+  rejected: number;
+}> {
+  const db = getDb();
+  const rows = await db
+    .select({ status: stories.status, n: count() })
+    .from(stories)
+    .groupBy(stories.status);
+  const result = { draft: 0, published: 0, rejected: 0 };
+  for (const r of rows) {
+    result[r.status] = Number(r.n);
+  }
+  return result;
 }
 
 // Map of storyId → the lowest-sortOrder Category that the Story belongs to.
@@ -153,6 +225,32 @@ export async function primaryCategoryByStoryIds(
       { slug: r.slug, name: r.name, sortOrder: r.sortOrder },
     ]),
   );
+}
+
+// Map of storyId → list of category slugs. Used by the admin tables to
+// render the Categories column.
+export async function categorySlugsByStoryIds(
+  storyIds: readonly string[],
+): Promise<Map<string, string[]>> {
+  if (storyIds.length === 0) return new Map();
+  const db = getDb();
+  const rows = await db
+    .select({
+      storyId: storyCategories.storyId,
+      slug: categories.slug,
+      sortOrder: categories.sortOrder,
+    })
+    .from(storyCategories)
+    .innerJoin(categories, eq(categories.id, storyCategories.categoryId))
+    .where(inArray(storyCategories.storyId, storyIds as string[]))
+    .orderBy(asc(categories.sortOrder));
+
+  const map = new Map<string, string[]>();
+  for (const r of rows) {
+    if (!map.has(r.storyId)) map.set(r.storyId, []);
+    map.get(r.storyId)!.push(r.slug);
+  }
+  return map;
 }
 
 export async function getCategoryIdsBySlug(
