@@ -118,3 +118,4 @@ logs/
 # ──────────────────────────────────────────────────────────────────────
 # Local-only audit dumps (regenerable from a code review). Do not commit.
 REVIEW_REPORT.md
+.sandcastle/
