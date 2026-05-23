@@ -15,11 +15,11 @@ CREATE TABLE "story_categories" (
 ALTER TABLE "story_categories" ADD CONSTRAINT "story_categories_story_id_stories_id_fk" FOREIGN KEY ("story_id") REFERENCES "public"."stories"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "story_categories" ADD CONSTRAINT "story_categories_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 -- Seed the nine MVP Categories. Hand-written (drizzle-kit does not generate
--- data-only INSERTs from schema). Keep in sync with
--- packages/shared/src/constants/categories.ts — that file is the source of
--- truth; this block exists so a fresh DB bootstrap leaves exactly nine rows
--- without an out-of-band seed step. ON CONFLICT DO UPDATE makes re-runs
--- (and any future name/sort_order edits) a no-op vs idempotent reset.
+-- data-only INSERTs from schema). The slug enum is the source of truth (see
+-- packages/shared/src/constants/categories.ts); name + sort_order are seed
+-- values only — once a row exists, the admin Settings page (ADR 0004 § F)
+-- owns its name and sort_order, so ON CONFLICT DO NOTHING keeps admin
+-- overrides intact across re-runs. New slugs added to the seed still insert.
 INSERT INTO "categories" ("slug", "name", "sort_order") VALUES
   ('ai-in-tech',        'AI in Tech',           10),
   ('ai-in-finance',     'AI in Finance',        20),
@@ -30,6 +30,4 @@ INSERT INTO "categories" ("slug", "name", "sort_order") VALUES
   ('ai-research',       'AI Research & Models', 70),
   ('ai-tools',          'AI Tools & Products',  80),
   ('ai-policy-safety',  'AI Policy & Safety',   90)
-ON CONFLICT ("slug") DO UPDATE
-  SET "name" = excluded."name",
-      "sort_order" = excluded."sort_order";
+ON CONFLICT ("slug") DO NOTHING;

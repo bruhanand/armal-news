@@ -36,6 +36,13 @@
       "when": 1777926530339,
       "tag": "0004_fixed_mercury",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1779549954845,
+      "tag": "0005_high_magus",
+      "breakpoints": true
     }
   ]
 }
