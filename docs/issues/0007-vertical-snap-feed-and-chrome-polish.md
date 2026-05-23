@@ -1,6 +1,6 @@
 # Issue 0007 — Mobile vertical-snap feed + desktop grid + chrome + keyboard shortcuts + cursor pagination
 
-**Labels:** needs-triage, AFK
+**Labels:** ready-for-agent, AFK
 
 ## Parent
 

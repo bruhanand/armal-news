@@ -1,6 +1,6 @@
 # Issue 0008 — Admin v1: full dashboard, expanded transition guard, settings stubs
 
-**Labels:** needs-triage, AFK
+**Labels:** ready-for-agent, AFK
 
 ## Parent
 

@@ -1,6 +1,6 @@
 # Issue 0004 — Categories: 9-seed migration, story_categories join, ingest validation, feed filter, web bottom sheet
 
-**Labels:** needs-triage, AFK
+**Labels:** ready-for-agent, AFK
 
 ## Parent
 

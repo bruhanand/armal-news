@@ -1,6 +1,6 @@
 # Issue 0003 — Image pipeline: ingest fetches → Supabase Storage → CDN URL on row
 
-**Labels:** needs-triage, AFK
+**Labels:** ready-for-agent, AFK
 
 ## Parent
 

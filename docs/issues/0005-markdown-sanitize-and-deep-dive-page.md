@@ -1,6 +1,6 @@
 # Issue 0005 — Markdown sanitization + styled deep-dive page with tags and source-link footer
 
-**Labels:** needs-triage, AFK
+**Labels:** ready-for-agent, AFK
 
 ## Parent
 

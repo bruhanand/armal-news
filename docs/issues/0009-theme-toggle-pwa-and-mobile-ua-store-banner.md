@@ -1,6 +1,6 @@
 # Issue 0009 — Theme provider (OS default + persisted toggle) + desktop PWA install + mobile-UA store banner
 
-**Labels:** needs-triage, AFK
+**Labels:** ready-for-agent, AFK
 
 ## Parent
 

@@ -1,6 +1,6 @@
 # Issue 0002 — OpenClaw ingest endpoint with zod batch validation and frozen slug
 
-**Labels:** needs-triage, AFK
+**Labels:** ready-for-agent, AFK
 
 ## Parent
 

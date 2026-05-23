@@ -1,6 +1,6 @@
 # Issue 0010 — Mobile app (Expo): feed + category sheet + deep-dive + native share + theme
 
-**Labels:** needs-triage, AFK
+**Labels:** ready-for-agent, AFK
 
 ## Parent
 

@@ -1,6 +1,6 @@
 # Issue 0011 — OpenClaw remote-control protocol (admin ↔ OpenClaw config sync)
 
-**Labels:** needs-triage, AFK
+**Labels:** ready-for-agent, AFK
 
 ## Parent
 
