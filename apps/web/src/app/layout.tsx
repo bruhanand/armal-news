@@ -1,7 +1,11 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Inter, JetBrains_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
+import { ThemeScript } from "./chrome/ThemeScript";
+import { MobileStoreBanner } from "./chrome/MobileStoreBanner";
+import { detectMobilePlatform } from "./chrome/ua";
 
 const newsreader = Newsreader({
   subsets: ["latin"],
@@ -30,13 +34,33 @@ export const metadata: Metadata = {
   title: "Armal News",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const hdrs = await headers();
+  const platform = detectMobilePlatform(hdrs.get("user-agent"));
+
   return (
     <html
       lang="en"
       className={`${newsreader.variable} ${inter.variable} ${jetbrains.variable}`}
+      // The pre-paint script in <head> may add `theme-light` / `theme-dark`
+      // class and `data-*-dismissed` attributes before React hydrates.
+      suppressHydrationWarning
     >
-      <body className="bg-bg text-fg font-body">{children}</body>
+      <head>
+        <ThemeScript />
+      </head>
+      <body
+        className={`bg-bg text-fg font-body${
+          platform ? " has-mobile-banner" : ""
+        }`}
+      >
+        {platform && <MobileStoreBanner platform={platform} />}
+        {children}
+      </body>
     </html>
   );
 }

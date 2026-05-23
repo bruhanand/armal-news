@@ -14,13 +14,13 @@ import type { FeedItem } from "./feedItem";
 import {
   CategoryIcon,
   ChevronDown,
-  DownloadIcon,
   MenuIcon,
-  SunIcon,
   XIcon,
 } from "./icons";
 import { CategoryMenu, type CategoryOption } from "./CategoryMenu";
 import { ShortcutsModal } from "./ShortcutsModal";
+import { ThemeToggle } from "../chrome/ThemeToggle";
+import { InstallAffordances } from "../chrome/InstallAffordances";
 import {
   closestIndexToCenter,
   matchFeedShortcut,
@@ -37,9 +37,17 @@ type Props = {
   initial: { items: FeedItem[]; nextCursor: string | null };
   categories: CategoryOption[];
   activeSlug: string | null;
+  // True iff the request UA is iOS or Android. Suppresses the desktop PWA
+  // install button + floating prompt on those surfaces.
+  mobileUa: boolean;
 };
 
-export function FeedShell({ initial, categories, activeSlug }: Props) {
+export function FeedShell({
+  initial,
+  categories,
+  activeSlug,
+  mobileUa,
+}: Props) {
   const router = useRouter();
   const [items, setItems] = useState<FeedItem[]>(initial.items);
   const [nextCursor, setNextCursor] = useState<string | null>(initial.nextCursor);
@@ -299,22 +307,8 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
             </kbd>
             shortcuts
           </button>
-          {/* TODO(slice-0009): wire theme toggle (cycles light → dark → system). */}
-          <button
-            type="button"
-            aria-label="Theme"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted hover:text-fg"
-          >
-            <SunIcon className="h-4 w-4" />
-          </button>
-          {/* TODO(slice-0009): wire PWA install (beforeinstallprompt). */}
-          <button
-            type="button"
-            className="inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full bg-accent px-3.5 text-[12px] font-semibold text-[#FBF7EF]"
-          >
-            <DownloadIcon className="h-[13px] w-[13px]" />
-            Install app
-          </button>
+          <ThemeToggle />
+          <InstallAffordances mobile={mobileUa} />
         </div>
       </header>
 
@@ -341,13 +335,16 @@ export function FeedShell({ initial, categories, activeSlug }: Props) {
         )}
       </div>
 
-      {/* MOBILE SNAP (<768px) — full-screen vertical-snap, 100dvh per card. */}
+      {/* MOBILE SNAP (<768px) — full-screen vertical-snap, 100dvh per card.
+       * The --mobile-banner-h CSS var (0px unless the SSR'd store banner is
+       * present and not dismissed) shrinks the snap viewport by 56px so the
+       * fixed banner overlays empty space, not chrome. */}
       <div
         ref={mobileScrollRef}
-        className="h-[100dvh] snap-y snap-mandatory overflow-y-auto md:hidden"
+        className="h-[calc(100dvh-var(--mobile-banner-h,0px))] snap-y snap-mandatory overflow-y-auto md:hidden"
       >
         {items.length === 0 ? (
-          <p className="flex h-[100dvh] items-center justify-center text-muted">
+          <p className="flex h-[calc(100dvh-var(--mobile-banner-h,0px))] items-center justify-center text-muted">
             No published stories yet.
           </p>
         ) : (
@@ -459,7 +456,7 @@ function MobileCard({
   onClearFilter: () => void;
 }) {
   return (
-    <article className="relative h-[100dvh] w-full snap-start">
+    <article className="relative h-[calc(100dvh-var(--mobile-banner-h,0px))] w-full snap-start">
       {/* Tap target covering the full card. aria-hidden + tabIndex={-1} so
        * screen readers and keyboard users don't land on this anonymous
        * region — they land on the headline link below instead. */}

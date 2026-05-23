@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { getPublishedStoryBySlug, primaryCategoryByStoryIds } from "@armal/shared/db/queries";
 import { isHttpUrl } from "@armal/shared/lib/url";
 import { DeepDiveShortcuts } from "./DeepDiveShortcuts";
+import { ThemeToggle } from "../../chrome/ThemeToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -59,8 +60,9 @@ export default async function StoryPage({ params }: Props) {
   return (
     <main className="min-h-screen bg-bg text-fg">
       <DeepDiveShortcuts sourceLink={story.sourceLink} />
-      {/* Desktop / tablet header — slim back-to-feed link. Mobile (<768px) uses
-       * the glass back-button overlay on the hero instead (ADR 0004 § L). */}
+      {/* Desktop / tablet header — slim back-to-feed link + theme toggle on
+       * the right. Mobile (<768px) uses the glass back-button overlay on the
+       * hero instead (ADR 0004 § L). */}
       <header className="hidden md:flex items-center px-8 py-5 text-sm text-muted">
         <Link
           href="/"
@@ -69,6 +71,9 @@ export default async function StoryPage({ params }: Props) {
           <ChevLeft className="h-4 w-4" />
           Back to feed
         </Link>
+        <div className="ml-auto">
+          <ThemeToggle />
+        </div>
       </header>
 
       <article>

@@ -28,6 +28,27 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* FOUC suppression for the mobile store banner: when a fresh dismissal sits
+ * in localStorage (≤30 days), the pre-paint script sets this attribute on
+ * <html> before React hydrates, so the banner never renders. */
+html[data-mobile-banner-dismissed] [data-mobile-store-banner] {
+  display: none;
+}
+
+/* When the server SSRs the mobile store banner, body gets `has-mobile-banner`
+ * so the fixed 56px banner doesn't occlude the snap container or the
+ * deep-dive hero. The CSS variable lets the mobile snap surfaces shorten
+ * each card by the banner height — see FeedShell. Once dismissed, both
+ * effects collapse to zero. */
+body.has-mobile-banner {
+  --mobile-banner-h: 56px;
+  padding-top: 56px;
+}
+html[data-mobile-banner-dismissed] body.has-mobile-banner {
+  --mobile-banner-h: 0px;
+  padding-top: 0;
+}
+
 /* Sanitized-HTML article body. Owns its own typography because the markup
  * comes from markdown-sanitize at write time and the deep-dive renders it
  * via dangerouslySetInnerHTML. Mobile-first: 15px / 1.65 by default,
