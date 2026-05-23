@@ -77,12 +77,12 @@ export function CategorySheet({
             active={activeSlug === null}
             onPress={() => pick(null)}
           />
-          {categories.map((c, idx) => (
+          {categories.map((c) => (
             <SheetRow
               key={c.slug}
               label={c.name}
               slug={c.slug}
-              showDivider={idx >= 0}
+              showDivider
               active={activeSlug === c.slug}
               onPress={() => pick(c.slug)}
             />

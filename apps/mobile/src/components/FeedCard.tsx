@@ -5,15 +5,7 @@
 //   • headline card straddles the seam (translateY -50%)
 //   • bottom half: warm-paper panel with italic summary centered + "Tap to
 //     read →" affordance bottom-right
-import { useMemo } from "react";
-import {
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  type LayoutChangeEvent,
-} from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { CategoryIcon } from "../icons/CategoryIcon";
 import { useTheme } from "../theme/ThemeProvider";
 import type { FeedItem } from "../api";
@@ -37,7 +29,6 @@ export function FeedCard({
   onWordmarkPress,
 }: Props) {
   const { tokens } = useTheme();
-  const summary = useMemo(() => withCurlyQuotes(item.shortSummary), [item.shortSummary]);
 
   return (
     <Pressable
@@ -108,7 +99,7 @@ export function FeedCard({
             { color: tokens.color.fg, fontFamily: tokens.font.display },
           ]}
         >
-          {summary}
+          {`“${item.shortSummary}”`}
         </Text>
         <Text
           style={[
@@ -121,11 +112,6 @@ export function FeedCard({
       </View>
     </Pressable>
   );
-}
-
-// Summaries arrive as plain text; the design wraps them in curly quotes.
-function withCurlyQuotes(s: string): string {
-  return `“${s}”`;
 }
 
 const styles = StyleSheet.create({
@@ -220,10 +206,3 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 });
-
-export function useFeedCardHeight(onLayout: (e: LayoutChangeEvent) => void) {
-  // re-exported helper so the screen's FlashList can pull the measured page
-  // height without each card managing it itself; kept for symmetry with
-  // the layout-driven snap math.
-  return { onLayout };
-}

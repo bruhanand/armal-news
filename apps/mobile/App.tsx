@@ -38,11 +38,7 @@ function AppShell() {
     setRoute({ kind: "deep-dive", slug });
   }, []);
 
-  const backToFeed = useCallback(() => {
-    setRoute({ kind: "feed" });
-  }, []);
-
-  const seenOnboarding = useCallback(() => {
+  const showFeed = useCallback(() => {
     setRoute({ kind: "feed" });
   }, []);
 
@@ -51,11 +47,11 @@ function AppShell() {
       <StatusBar style={resolved === "dark" ? "light" : "dark"} />
       {route.kind === "splash" ? <JsSplash /> : null}
       {route.kind === "onboarding" ? (
-        <OnboardingScreen onContinue={seenOnboarding} />
+        <OnboardingScreen onContinue={showFeed} />
       ) : null}
       {route.kind === "feed" ? <FeedScreen onOpenStory={openStory} /> : null}
       {route.kind === "deep-dive" ? (
-        <DeepDiveScreen slug={route.slug} onBack={backToFeed} />
+        <DeepDiveScreen slug={route.slug} onBack={showFeed} />
       ) : null}
     </View>
   );
