@@ -35,9 +35,7 @@ export function ConfirmDialog({
     <div className="dialog-overlay" role="dialog" aria-modal="true">
       <div className="dialog">
         <h3>{title}</h3>
-        <div>
-          {typeof body === "string" ? <p>{body}</p> : body}
-        </div>
+        <div>{body}</div>
         {extra}
         <div className="dialog-acts">
           <button

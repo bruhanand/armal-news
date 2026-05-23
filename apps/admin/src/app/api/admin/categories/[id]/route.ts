@@ -26,11 +26,7 @@ export async function PATCH(
   } catch {
     return NextResponse.json({ error: "invalid JSON" }, { status: 400 });
   }
-  if (
-    body !== null &&
-    typeof body === "object" &&
-    "slug" in (body as Record<string, unknown>)
-  ) {
+  if (body !== null && typeof body === "object" && "slug" in body) {
     return NextResponse.json(
       { error: "slug is immutable; edit it in constants/categories.ts" },
       { status: 400 },

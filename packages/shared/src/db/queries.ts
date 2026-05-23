@@ -341,10 +341,6 @@ export async function getAdminSetting(
   return row ?? null;
 }
 
-export async function listAdminSettings(): Promise<AdminSetting[]> {
-  return getDb().select().from(adminSettings);
-}
-
 // Delete-then-insert reconciliation. The join has no other writers
 // (OpenClaw is single-writer; the ingest loop is sequential) and the
 // caller wraps this in a transaction, so the brief gap is not a
