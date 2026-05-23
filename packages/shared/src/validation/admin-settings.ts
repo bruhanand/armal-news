@@ -26,7 +26,6 @@ export type IngestionConfig = z.infer<typeof IngestionConfig>;
 // POST /api/admin/openclaw/heartbeat after each ingest cycle; read by the
 // Settings page to render an "OpenClaw connected" status badge.
 export const OPENCLAW_INGEST_STATUSES = ["ok", "error"] as const;
-export type OpenClawIngestStatus = (typeof OPENCLAW_INGEST_STATUSES)[number];
 
 export const OpenClawHealth = z
   .object({

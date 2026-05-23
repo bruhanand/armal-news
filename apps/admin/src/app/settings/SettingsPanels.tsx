@@ -63,9 +63,7 @@ function HealthBadge({ health }: { health: OpenClawHealth | null }) {
   }
   const ok = health.lastIngestStatus === "ok";
   return (
-    <div
-      className={ok ? "openclaw-status openclaw-status-ok" : "openclaw-status openclaw-status-err"}
-    >
+    <div className={`openclaw-status openclaw-status-${ok ? "ok" : "err"}`}>
       <span className="dot" aria-hidden="true" />
       <span className="lbl">
         {ok ? "OpenClaw connected" : "OpenClaw error"}

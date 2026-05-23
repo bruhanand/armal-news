@@ -1,10 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { sql } from "drizzle-orm";
 import { adminSettings, getDb } from "@armal/shared/db";
-import {
-  OpenClawHealth,
-  type OpenClawHealth as OpenClawHealthType,
-} from "@armal/shared/validation/admin-settings";
+import { OpenClawHealth } from "@armal/shared/validation/admin-settings";
 import { POST } from "./route";
 
 function postReq(body: unknown) {
@@ -46,7 +43,7 @@ describe("POST /api/admin/openclaw/heartbeat", () => {
     await POST(postReq({ status: "error", message: "no feeds reachable" }));
     const rows = await getDb().select().from(adminSettings);
     expect(rows).toHaveLength(1);
-    const parsed = OpenClawHealth.parse(rows[0]?.value) as OpenClawHealthType;
+    const parsed = OpenClawHealth.parse(rows[0]?.value);
     expect(parsed.lastIngestStatus).toBe("error");
     expect(parsed.lastIngestMessage).toBe("no feeds reachable");
   });

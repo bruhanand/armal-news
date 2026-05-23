@@ -18,9 +18,7 @@ export default async function SettingsPage() {
   // OpenClaw writes its own value via the heartbeat endpoint; if something
   // landed there before slice 0011's schema was finalised, fall through
   // gracefully rather than crashing the page.
-  const parsedHealth = health
-    ? OpenClawHealth.safeParse(health.value)
-    : null;
+  const parsedHealth = health ? OpenClawHealth.safeParse(health.value) : null;
   const healthValue = parsedHealth?.success ? parsedHealth.data : null;
 
   return (
