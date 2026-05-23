@@ -1,12 +1,9 @@
 import { ImageResponse } from "next/og";
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
-import { getDb, storyCategories } from "@armal/shared/db";
 import {
   getPublishedStoryBySlug,
-  listCategories,
+  primaryCategoryByStoryIds,
 } from "@armal/shared/db/queries";
-import type { Category } from "@armal/shared/db/schema";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -44,32 +41,17 @@ const newsreaderItalic500 = loadFont("Newsreader", 500, "italic");
 const newsreaderItalic400 = loadFont("Newsreader", 400, "italic");
 const jetbrainsMono = loadFont("JetBrains Mono", 400);
 
-async function firstCategoryName(
-  storyId: string,
-  allCategories: Category[],
-): Promise<string | null> {
-  const rows = await getDb()
-    .select({ categoryId: storyCategories.categoryId })
-    .from(storyCategories)
-    .where(eq(storyCategories.storyId, storyId));
-  const matchedIds = new Set(rows.map((r) => r.categoryId));
-  const sorted = [...allCategories].sort((a, b) => a.sortOrder - b.sortOrder);
-  return sorted.find((c) => matchedIds.has(c.id))?.name ?? null;
-}
-
 export default async function OgImage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [story, allCategories] = await Promise.all([
-    getPublishedStoryBySlug(slug),
-    listCategories(),
-  ]);
+  const story = await getPublishedStoryBySlug(slug);
   if (!story) notFound();
 
-  const categoryName = await firstCategoryName(story.id, allCategories);
+  const categoryMap = await primaryCategoryByStoryIds([story.id]);
+  const categoryName = categoryMap.get(story.id)?.name ?? null;
 
   const [fontSemiBold, fontItalic500, fontItalic400, fontMono] =
     await Promise.all([

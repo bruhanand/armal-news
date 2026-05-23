@@ -1,11 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
-import { getDb, storyCategories } from "@armal/shared/db";
-import { getPublishedStoryBySlug, listCategories } from "@armal/shared/db/queries";
-import type { Story, Category } from "@armal/shared/db/schema";
+import { getPublishedStoryBySlug, primaryCategoryByStoryIds } from "@armal/shared/db/queries";
 import { isHttpUrl } from "@armal/shared/lib/url";
 import { DeepDiveShortcuts } from "./DeepDiveShortcuts";
 
@@ -50,19 +47,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 // reading-column max-width — chosen because reading-column width drives
 // readability more than viewport size.
 
-export default async function StoryPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function StoryPage({ params }: Props) {
   const { slug } = await params;
-  const [story, allCategories] = await Promise.all([
-    getPublishedStoryBySlug(slug),
-    listCategories(),
-  ]);
+  const story = await getPublishedStoryBySlug(slug);
   if (!story) notFound();
 
-  const categoryName = await firstCategoryNameFor(story.id, allCategories);
+  const categoryMap = await primaryCategoryByStoryIds([story.id]);
+  const categoryName = categoryMap.get(story.id)?.name ?? null;
   const sourceHost = parseSourceHost(story.sourceLink);
 
   return (
@@ -193,22 +184,6 @@ function parseSourceHost(sourceLink: string): string | null {
   } catch {
     return null;
   }
-}
-
-// Pick the first category that this Story belongs to as the eyebrow label.
-// Stories can have multiple categories; the design pack shows just one. We
-// pick the lowest sort_order match so the choice is deterministic.
-async function firstCategoryNameFor(
-  storyId: Story["id"],
-  allCategories: Category[],
-): Promise<string | null> {
-  const rows = await getDb()
-    .select({ categoryId: storyCategories.categoryId })
-    .from(storyCategories)
-    .where(eq(storyCategories.storyId, storyId));
-  const matchedIds = new Set(rows.map((r) => r.categoryId));
-  const sorted = [...allCategories].sort((a, b) => a.sortOrder - b.sortOrder);
-  return sorted.find((c) => matchedIds.has(c.id))?.name ?? null;
 }
 
 function ChevLeft({ className }: { className?: string }) {
