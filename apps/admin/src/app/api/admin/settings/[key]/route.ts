@@ -5,11 +5,13 @@ import { upsertAdminSetting } from "@armal/shared/db/queries";
 export const dynamic = "force-dynamic";
 
 // admin_settings.value is jsonb; each key owns its own shape, validated by
-// the consumer when it reads. We only enforce that the body has a `value`
-// field of any JSON shape here.
+// the consumer when it reads. We only enforce that the body carries a `value`
+// key here — its inner shape is whatever the caller's settings panel writes.
 const PatchBody = z
   .object({
-    value: z.unknown(),
+    value: z
+      .unknown()
+      .refine((v) => v !== undefined, { message: "value is required" }),
   })
   .strict();
 
