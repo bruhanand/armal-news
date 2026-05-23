@@ -79,3 +79,7 @@ React Native + Expo (managed workflow) app that mirrors the design pack exactly.
 
 - Issue 0006 (OG card so share previews work)
 - Issue 0007 (cursor pagination contract on `/api/feed`)
+
+---
+
+**Status:** Shipped via Sandcastle on 2026-05-23. Merge commit: feec469.
