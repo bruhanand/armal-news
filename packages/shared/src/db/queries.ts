@@ -1,9 +1,11 @@
 import { and, asc, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { getDb, type Db } from "./client";
 import {
+  adminSettings,
   categories,
   stories,
   storyCategories,
+  type AdminSetting,
   type Category,
   type Story,
 } from "./schema";
@@ -282,6 +284,65 @@ export async function loadCategoryIdMap(
     .select({ id: categories.id, slug: categories.slug })
     .from(categories);
   return new Map(rows.map((r) => [r.slug, r.id]));
+}
+
+// Updates a Category's mutable fields. `slug` is intentionally not editable —
+// it's the immutable join key the seed enum is locked to (ADR 0004 § F).
+// Returns the updated row or null if the id doesn't exist.
+export async function updateCategory(
+  id: string,
+  patch: { name?: string; sortOrder?: number },
+): Promise<Category | null> {
+  const set: { name?: string; sortOrder?: number } = {};
+  if (patch.name !== undefined) set.name = patch.name;
+  if (patch.sortOrder !== undefined) set.sortOrder = patch.sortOrder;
+  if (Object.keys(set).length === 0) {
+    const [row] = await getDb()
+      .select()
+      .from(categories)
+      .where(eq(categories.id, id))
+      .limit(1);
+    return row ?? null;
+  }
+  const [row] = await getDb()
+    .update(categories)
+    .set(set)
+    .where(eq(categories.id, id))
+    .returning();
+  return row ?? null;
+}
+
+// admin_settings is key→jsonb. Each key owns its own value shape; readers
+// validate before use. Upsert is the only write — the Settings page never
+// "deletes" a key (an empty value just overwrites).
+export async function upsertAdminSetting(
+  key: string,
+  value: unknown,
+): Promise<AdminSetting> {
+  const [row] = await getDb()
+    .insert(adminSettings)
+    .values({ key, value, updatedAt: new Date() })
+    .onConflictDoUpdate({
+      target: adminSettings.key,
+      set: { value, updatedAt: new Date() },
+    })
+    .returning();
+  return row!;
+}
+
+export async function getAdminSetting(
+  key: string,
+): Promise<AdminSetting | null> {
+  const [row] = await getDb()
+    .select()
+    .from(adminSettings)
+    .where(eq(adminSettings.key, key))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function listAdminSettings(): Promise<AdminSetting[]> {
+  return getDb().select().from(adminSettings);
 }
 
 // Delete-then-insert reconciliation. The join has no other writers

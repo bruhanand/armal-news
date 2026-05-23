@@ -42,3 +42,28 @@ export async function uploadStoryImage(input: {
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(objectKey);
   return { publicUrl: data.publicUrl };
 }
+
+// Extract the object key from a public URL of the form
+//   https://<project>.supabase.co/storage/v1/object/public/story-images/<key>
+// Returns null when the URL doesn't match — we then skip the Storage delete
+// rather than blowing up the Postgres row delete.
+export function parseStoryImageObjectKey(publicUrl: string): string | null {
+  try {
+    const u = new URL(publicUrl);
+    const marker = `/public/${BUCKET}/`;
+    const idx = u.pathname.indexOf(marker);
+    if (idx < 0) return null;
+    const key = u.pathname.slice(idx + marker.length);
+    return key.length > 0 ? key : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteStoryImageByUrl(publicUrl: string): Promise<void> {
+  const key = parseStoryImageObjectKey(publicUrl);
+  if (!key) return;
+  const supabase = getClient();
+  const { error } = await supabase.storage.from(BUCKET).remove([key]);
+  if (error) throw error;
+}
