@@ -104,3 +104,7 @@ These confirm un-publish and reject both immediately remove a Story from public 
 
 - Issue 0004
 - Issue 0005 (Markdown Preview tab needs `markdown-sanitize` from 0005)
+
+---
+
+**Status:** Shipped via Sandcastle on 2026-05-23. Merge commit: 356b539.

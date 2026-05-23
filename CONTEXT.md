@@ -37,7 +37,7 @@ A TikTok-style AI-news app for niche AI/tech categories. Content is researched a
 
 1. **OpenClaw** researches and generates a batch of fully-formed Stories (title + summary + body + image + source link + category) on the Linux laptop.
 2. OpenClaw POSTs the batch to the **Admin Dashboard** at `localhost:3001` over Tailscale. Each Story lands in Postgres as `status='draft'`.
-3. The **Admin** opens the Admin Dashboard, reviews each draft, optionally edits text, and clicks **Publish** (status → `published`) or **Reject** (status → `rejected`).
+3. The **Admin** opens the Admin Dashboard, reviews each draft, optionally edits text, and clicks **Publish** (status → `published`) or **Reject** (status → `rejected`). A published story can be **Un-published** back to `draft` (clears `published_at`); a rejected story can be **Restored** to `draft` (clears `reject_reason`).
 4. The **News App** (web + mobile) immediately serves any Story with `status='published'`.
 
 ## Language
@@ -47,13 +47,16 @@ An external personal AI assistant (https://github.com/openclaw/openclaw) tasked 
 _Avoid_: Content Engine, News Researcher, OpenClaw Pipeline, OpenClaw Engine.
 
 **Story**:
-The single content unit, fully-formed by OpenClaw. Has: a **Title**, an **Image**, a **Short Summary** (catchy, card-sized; rendered in serif italic + curly quotes), a **Full Article Text** (Markdown at the ingest boundary; converted to sanitized HTML at write time and rendered as HTML on the deep-dive), a source **Link**, one or more **Categories** (from the seeded list), zero or more free-form **Tags**, and an **External ID** (OpenClaw-supplied, used as idempotency key on re-delivery). A Story moves through states: `draft` (awaiting admin review) → `published` (visible to readers) — or `rejected` (soft-deleted, retained for audit). Drafts can be edited freely; published stories can also be edited in place (typo fixes, link corrections); the slug never changes once assigned.
+The single content unit, fully-formed by OpenClaw. Has: a **Title**, an **Image**, a **Short Summary** (catchy, card-sized; rendered in serif italic + curly quotes), a **Full Article Text** (Markdown at the ingest boundary; converted to sanitized HTML at write time and rendered as HTML on the deep-dive), a source **Link**, one or more **Categories** (from the seeded list), zero or more free-form **Tags**, an **External ID** (OpenClaw-supplied, used as idempotency key on re-delivery), and an optional **Reject Reason** (free-form text captured at rejection). Legal status transitions: `draft → published` (stamps `published_at`), `draft → rejected` (captures `reject_reason`), `published → draft` (Un-publish — clears `published_at`; share-stable URLs immediately 404), `rejected → draft` (Restore — clears `reject_reason`). All other transitions are illegal. Drafts can be edited freely; published stories can also be edited in place (typo fixes, link corrections); the slug never changes once assigned.
 
 **Category**:
-A niche bucket from a **fixed, admin-seeded list** (e.g. _AI in Tech_, _AI in Finance_, _AI in Robotics_). Each **Story** belongs to **one or more** Categories. Readers can filter the feed by selecting a single Category at a time (or **All**, which is the default). Categories are not user-creatable. _Avoid_: Niche, Topic, Bucket.
+A niche bucket from a **seeded list** (e.g. _AI in Tech_, _AI in Finance_, _AI in Robotics_). Each **Story** belongs to **one or more** Categories. Readers can filter the feed by selecting a single Category at a time (or **All**, which is the default). Category `name` and `sort_order` are **runtime-mutable** by the admin (via the Settings → Categories panel); `slug` is immutable once seeded. Categories are not user-creatable. _Avoid_: Niche, Topic, Bucket.
 
 **Tag**:
 A free-form text label attached to a **Story** (e.g. "humanoid-robot", "1x", "frontier-model"). Tags are produced by OpenClaw per Story; there is no central Tag table — they are stored as a string array on the Story row. Tags are surfaced in the deep-dive view but are not primary feed navigation in MVP. _Avoid_: Keyword, Label.
+
+**Admin Settings** (`admin_settings` table):
+A key/value config store used by the **Admin Dashboard** Settings page. Keys map to JSON values (e.g. ingestion config, categories overrides, auth stubs). Writes are live immediately in the dashboard; consuming code in other systems (e.g. OpenClaw sync) reads from these keys when their respective slices ship. Not to be confused with per-Story or per-Category fields.
 
 **MVP Category list** (seeded):
 
