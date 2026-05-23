@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { IngestBatch, IngestStoryV1 } from "./story";
+import {
+  IngestBatch,
+  IngestStoryV1,
+  statusTransition,
+  STORY_STATUSES,
+  type StoryStatus,
+} from "./story";
 
 const validStory = {
   external_id: "openclaw-2026-05-02-001",
@@ -153,6 +159,121 @@ describe("IngestStoryV1", () => {
       category_slugs: all,
     });
     expect(result.success).toBe(true);
+  });
+});
+
+describe("statusTransition", () => {
+  const NOW = new Date("2026-05-23T12:00:00.000Z");
+
+  // Full 3×3 matrix coverage. Legal cells have explicit assertions; the rest
+  // (the seven illegal cells) are swept by the table below.
+  const ILLEGAL: Array<[StoryStatus, StoryStatus]> = [
+    ["draft", "draft"],
+    ["published", "rejected"],
+    ["rejected", "published"],
+    ["rejected", "rejected"],
+  ];
+
+  it("draft → published stamps publishedAt", () => {
+    const r = statusTransition({ from: "draft", to: "published", now: NOW });
+    expect(r).toEqual({
+      ok: true,
+      patch: { status: "published", publishedAt: NOW },
+    });
+  });
+
+  it("draft → rejected stores reason when provided", () => {
+    const r = statusTransition({
+      from: "draft",
+      to: "rejected",
+      reason: "Unverified claim",
+      now: NOW,
+    });
+    expect(r).toEqual({
+      ok: true,
+      patch: { status: "rejected", rejectReason: "Unverified claim" },
+    });
+  });
+
+  it("draft → rejected stores null when reason omitted", () => {
+    const r = statusTransition({ from: "draft", to: "rejected", now: NOW });
+    expect(r).toEqual({
+      ok: true,
+      patch: { status: "rejected", rejectReason: null },
+    });
+  });
+
+  it("draft → rejected stores null when reason is the empty string", () => {
+    const r = statusTransition({
+      from: "draft",
+      to: "rejected",
+      reason: "",
+      now: NOW,
+    });
+    expect(r).toEqual({
+      ok: true,
+      patch: { status: "rejected", rejectReason: null },
+    });
+  });
+
+  it("published → published is allowed with no side-effect", () => {
+    const r = statusTransition({
+      from: "published",
+      to: "published",
+      now: NOW,
+    });
+    expect(r).toEqual({ ok: true, patch: { status: "published" } });
+  });
+
+  it("published → draft (un-publish) clears publishedAt", () => {
+    const r = statusTransition({ from: "published", to: "draft", now: NOW });
+    expect(r).toEqual({
+      ok: true,
+      patch: { status: "draft", publishedAt: null },
+    });
+  });
+
+  it("rejected → draft (restore) clears rejectReason", () => {
+    const r = statusTransition({ from: "rejected", to: "draft", now: NOW });
+    expect(r).toEqual({
+      ok: true,
+      patch: { status: "draft", rejectReason: null },
+    });
+  });
+
+  it.each(ILLEGAL)(
+    "rejects illegal transition %s → %s",
+    (from, to) => {
+      const r = statusTransition({ from, to });
+      expect(r.ok).toBe(false);
+      if (!r.ok) {
+        expect(r.error).toMatch(/illegal status transition/);
+        expect(r.error).toContain(from);
+        expect(r.error).toContain(to);
+      }
+    },
+  );
+
+  it("legal cells cover every reachable state", () => {
+    // Sanity: the matrix is exhaustive — every (from, to) is either in the
+    // legal set above or in ILLEGAL. Catches a future enum addition that
+    // forgets to update this test.
+    const LEGAL = new Set([
+      "draft→published",
+      "draft→rejected",
+      "published→published",
+      "published→draft",
+      "rejected→draft",
+    ]);
+    for (const from of STORY_STATUSES) {
+      for (const to of STORY_STATUSES) {
+        const key = `${from}→${to}`;
+        const inIllegal = ILLEGAL.some(([f, t]) => f === from && t === to);
+        if (!LEGAL.has(key) && !inIllegal) {
+          throw new Error(`uncovered transition: ${key}`);
+        }
+      }
+    }
   });
 });
 
