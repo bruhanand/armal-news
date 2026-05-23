@@ -37,3 +37,7 @@ Make a pasted Story URL produce a rich preview card in iMessage, Twitter, WhatsA
 ## Blocked by
 
 - Issue 0005
+
+---
+
+**Status:** Shipped via Sandcastle on 2026-05-23. Merge commit: bf82a70.
