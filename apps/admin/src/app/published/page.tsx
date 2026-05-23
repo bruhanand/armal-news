@@ -3,63 +3,68 @@ import {
   categorySlugsByStoryIds,
   countStoriesByStatus,
   listCategories,
-  listDraftStories,
+  listPublishedStories,
 } from "@armal/shared/db/queries";
-import { SearchInput } from "./_components/SearchInput";
-import { StatusTabs } from "./_components/StatusTabs";
-import { DraftRowActions } from "./_components/DraftRowActions";
+import { SearchInput } from "../_components/SearchInput";
+import { StatusTabs } from "../_components/StatusTabs";
+import { PublishedRowActions } from "../_components/PublishedRowActions";
 
 export const dynamic = "force-dynamic";
 
 type Search = { q?: string };
 
-function relTime(d: Date): string {
-  const diff = Date.now() - d.getTime();
-  const min = Math.floor(diff / 60000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min} min ago`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr} hr ago`;
-  const day = Math.floor(hr / 24);
-  return `${day}d ago`;
+function fmtPubDate(d: Date | null): string {
+  if (!d) return "—";
+  const now = new Date();
+  const sameDay =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+  if (sameDay) {
+    return `Today ${d.getHours().toString().padStart(2, "0")}:${d
+      .getMinutes()
+      .toString()
+      .padStart(2, "0")}`;
+  }
+  const diff = Math.floor((now.getTime() - d.getTime()) / (24 * 3600_000));
+  if (diff === 1) return "Yesterday";
+  if (diff < 7) return `${diff} days ago`;
+  return d.toISOString().slice(0, 10);
 }
 
-export default async function DraftsPage({
+export default async function PublishedPage({
   searchParams,
 }: {
   searchParams: Promise<Search>;
 }) {
   const sp = await searchParams;
   const q = sp.q;
-  const [drafts, counts, allCategories] = await Promise.all([
-    listDraftStories({ q }),
+  const [{ items }, counts, allCategories] = await Promise.all([
+    listPublishedStories({ q, limit: 200 }),
     countStoriesByStatus(),
     listCategories(),
   ]);
-  const slugs = await categorySlugsByStoryIds(drafts.map((d) => d.id));
+  const slugs = await categorySlugsByStoryIds(items.map((i) => i.id));
   const nameBySlug = new Map(allCategories.map((c) => [c.slug, c.name]));
 
   return (
     <>
       <div className="content-head">
         <div className="ch-title">
-          Drafts queue
+          Published stories
           <span style={{ fontWeight: 400, color: "var(--muted)", fontSize: 12, marginLeft: 6 }}>
-            {drafts.length} {drafts.length === 1 ? "story" : "stories"}
+            {items.length} {items.length === 1 ? "story" : "stories"}
           </span>
         </div>
         <div className="ch-actions">
-          <SearchInput placeholder="Search stories…" />
-          <StatusTabs active="draft" counts={counts} />
+          <SearchInput placeholder="Search published…" />
+          <StatusTabs active="published" counts={counts} />
         </div>
       </div>
-      {drafts.length === 0 ? (
+      {items.length === 0 ? (
         <div className="empty">
-          <h3>No drafts in queue</h3>
-          <p>
-            All caught up. New stories from the ingestion pipeline will appear
-            here.
-          </p>
+          <h3>No published stories</h3>
+          <p>Approved drafts will appear here once published.</p>
         </div>
       ) : (
         <div className="tbl-wrap">
@@ -69,12 +74,12 @@ export default async function DraftsPage({
                 <th className="th-img"></th>
                 <th>Title / Summary</th>
                 <th>Categories</th>
-                <th>Ingested</th>
+                <th>Published</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {drafts.map((s) => (
+              {items.map((s) => (
                 <tr key={s.id}>
                   <td>
                     <div className="td-inner td-thumb">
@@ -106,13 +111,20 @@ export default async function DraftsPage({
                     </div>
                   </td>
                   <td>
-                    <div className="td-inner td-time">
-                      {relTime(s.createdAt)}
+                    <div
+                      className="td-inner td-time"
+                      style={{ color: "var(--success)" }}
+                    >
+                      {fmtPubDate(s.publishedAt)}
                     </div>
                   </td>
                   <td>
                     <div className="td-inner td-actions">
-                      <DraftRowActions id={s.id} title={s.title} />
+                      <PublishedRowActions
+                        id={s.id}
+                        title={s.title}
+                        slug={s.slug}
+                      />
                     </div>
                   </td>
                 </tr>

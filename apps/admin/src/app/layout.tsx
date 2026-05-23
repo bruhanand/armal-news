@@ -1,4 +1,7 @@
 import type { ReactNode } from "react";
+import "./globals.css";
+import { Sidebar } from "./_components/Sidebar";
+import { ToastProvider } from "./_components/ToastProvider";
 
 export const metadata = {
   title: "Armal News — Admin",
@@ -7,15 +10,13 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body
-        style={{
-          fontFamily: "system-ui, sans-serif",
-          margin: 0,
-          padding: "32px",
-          maxWidth: "1024px",
-        }}
-      >
-        {children}
+      <body>
+        <ToastProvider>
+          <div className="app-shell">
+            <Sidebar />
+            <main className="content">{children}</main>
+          </div>
+        </ToastProvider>
       </body>
     </html>
   );
