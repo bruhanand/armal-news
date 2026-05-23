@@ -56,7 +56,13 @@ A niche bucket from a **seeded list** (e.g. _AI in Tech_, _AI in Finance_, _AI i
 A free-form text label attached to a **Story** (e.g. "humanoid-robot", "1x", "frontier-model"). Tags are produced by OpenClaw per Story; there is no central Tag table — they are stored as a string array on the Story row. Tags are surfaced in the deep-dive view but are not primary feed navigation in MVP. _Avoid_: Keyword, Label.
 
 **Admin Settings** (`admin_settings` table):
-A key/value config store used by the **Admin Dashboard** Settings page. Keys map to JSON values (e.g. ingestion config, categories overrides, auth stubs). Writes are live immediately in the dashboard; consuming code in other systems (e.g. OpenClaw sync) reads from these keys when their respective slices ship. Not to be confused with per-Story or per-Category fields.
+A key/value config store used by the **Admin Dashboard** Settings page. Keys map to JSON values. Active keys: `ingestion` (validated against `IngestionConfig`), `openclaw_health` (validated against `OpenClawHealth`), `auth` (UI stub, not yet live). Writes are live immediately in the dashboard; consuming code in other systems (e.g. OpenClaw sync) reads from these keys. Not to be confused with per-Story or per-Category fields.
+
+**IngestionConfig**:
+The zod-validated schema for the `admin_settings.ingestion` JSON value. Fields: `pollIntervalMinutes: number`, `rssSourceUrls: string[]`, `autoDraftThreshold: number` (0..1). Defined in `packages/shared/src/validation/admin-settings.ts`; OpenClaw vendors or copies this file so both sides validate identically. _Avoid_: Ingestion Settings, Feed Config.
+
+**OpenClawHealth**:
+The persisted shape of OpenClaw's last heartbeat, stored under `admin_settings.openclaw_health`. Fields: `lastSeen` (server-stamped ISO timestamp), `lastIngestStatus: "ok" | "error"`, `lastIngestMessage?: string`. Read by the Admin Dashboard Settings page to render the OpenClaw-status badge. _Avoid_: Heartbeat Data, Health Payload.
 
 **MVP Category list** (seeded):
 
@@ -92,7 +98,7 @@ An end user of the **News App**. May be anonymous or signed-in.
 
 ## Relationships
 
-- **OpenClaw** → **Admin Dashboard**: OpenClaw delivers fully-formed Stories (JSON + images).
+- **OpenClaw** ↔ **Admin Dashboard**: OpenClaw delivers fully-formed Stories (JSON + images) via `POST /api/ingest/stories`. OpenClaw also polls `GET /api/admin/openclaw/config` every ~30s to read the current `IngestionConfig` and detect version changes, and posts `POST /api/admin/openclaw/heartbeat` after each ingest cycle to update `OpenClawHealth`. Full protocol: `docs/openclaw-contract.md`.
 - **Admin** ↔ **Admin Dashboard**: Admin reviews each Story and flips its status from `draft` to `published` (or rejects it).
 - **Admin Dashboard** ↔ **News App**: Both apps share a single Postgres database. The Admin Dashboard writes Stories; the News App reads only Stories where `status = 'published'`. There is no HTTP publish call, no file copy, no webhook between them — publication is a state flip in shared storage.
 - **Reader** ↔ **News App**: Readers browse the feed **anonymously**. There are no user accounts, no Likes, no Profile, no onboarding in MVP.

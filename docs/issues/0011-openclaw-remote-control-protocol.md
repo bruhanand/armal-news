@@ -74,3 +74,7 @@ Slice 0008 shipped the Settings → Ingestion panel with a banner: *"Active when
 ## Blocked by
 
 - Issue 0008 (the Settings → Ingestion UI + `admin_settings` table must exist for this slice to activate them)
+
+---
+
+**Status:** Shipped via Sandcastle on 2026-05-23. Merge commit: b374e7c.
