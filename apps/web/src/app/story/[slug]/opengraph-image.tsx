@@ -138,6 +138,7 @@ export default async function OgImage({
               fontSize: 32,
               letterSpacing: "0.04em",
               color: "rgba(245,240,232,0.78)",
+              textShadow: "0 1px 2px rgba(0,0,0,0.35)",
             }}
           >
             Armal News
@@ -205,8 +206,8 @@ export default async function OgImage({
               letterSpacing: "-0.008em",
               color: INK,
               overflow: "hidden",
-              maxHeight: Math.round(52 * 1.13 * 2),
-              display: "flex",
+              lineClamp: 2,
+              display: "block",
             }}
           >
             {story.title}
@@ -222,9 +223,9 @@ export default async function OgImage({
               lineHeight: 1.4,
               color: MUTED,
               overflow: "hidden",
-              maxHeight: Math.round(28 * 1.4 * 2),
+              lineClamp: 2,
               marginTop: 4,
-              display: "flex",
+              display: "block",
             }}
           >
             {"“"}
