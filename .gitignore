@@ -111,3 +111,10 @@ logs/
 # and the project skills under `.claude/skills/` and `.agents/skills/`
 # stay checked in.
 .claude/settings.local.json
+.claude/launch.json
+
+# ──────────────────────────────────────────────────────────────────────
+# Generated audit / review artefacts
+# ──────────────────────────────────────────────────────────────────────
+# Local-only audit dumps (regenerable from a code review). Do not commit.
+REVIEW_REPORT.md
