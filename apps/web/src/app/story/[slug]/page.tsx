@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
+import type { Metadata } from "next";
 import { getDb, storyCategories } from "@armal/shared/db";
 import { getPublishedStoryBySlug, listCategories } from "@armal/shared/db/queries";
 import type { Story, Category } from "@armal/shared/db/schema";
@@ -9,6 +10,41 @@ import { isHttpUrl } from "@armal/shared/lib/url";
 import { DeepDiveShortcuts } from "./DeepDiveShortcuts";
 
 export const dynamic = "force-dynamic";
+
+type Props = { params: Promise<{ slug: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const story = await getPublishedStoryBySlug(slug);
+  if (!story) return {};
+
+  const ogImageUrl = `/story/${slug}/opengraph-image`;
+
+  return {
+    title: story.title,
+    description: story.shortSummary,
+    openGraph: {
+      title: story.title,
+      description: story.shortSummary,
+      type: "article",
+      url: `/story/${slug}`,
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          type: "image/png",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: story.title,
+      description: story.shortSummary,
+      images: [ogImageUrl],
+    },
+  };
+}
 
 // Tablet (768–1023px) collapses to the desktop layout at the same 680px
 // reading-column max-width — chosen because reading-column width drives
